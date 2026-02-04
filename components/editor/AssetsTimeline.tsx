@@ -8,16 +8,18 @@ import type { Subject } from '@/types'
 
 interface AssetsTimelineProps {
   subjects: Subject[]
-  mode: 'editing' | 'arrange' | 'previewing'
+  isLocked?: boolean
   onReorder?: (fromIndex: number, toIndex: number) => void
   onDurationChange?: (id: number, delta: number) => void
+  onNameChange?: (id: number, name: string) => void
+  onColorChange?: (id: number, color: string) => void
+  onPreviewSubject?: (id: number) => void
+  onFocusPreview?: (id: number) => void
   onDelete?: (id: number) => void
   onDuplicate?: (id: number) => void
   currentPlayingIndex?: number | null
-  previewStyle?: 'highlight' | 'solid'
-  onPreviewStyleChange?: (style: 'highlight' | 'solid') => void
-  bgm?: 'none' | 'all-my-fellas.mp3' | 'whats-wrong-with-u.mp3'
-  onBgmChange?: (bgm: 'none' | 'all-my-fellas.mp3' | 'whats-wrong-with-u.mp3') => void
+  newlyAddedId?: number | null
+  deleteEffectId?: number | null
 }
 
 function SortableRow({
@@ -25,7 +27,13 @@ function SortableRow({
   index,
   isLocked,
   isActive,
+  isNew,
+  isDelete,
   onDurationChange,
+  onNameChange,
+  onColorChange,
+  onPreviewSubject,
+  onFocusPreview,
   onDelete,
   onDuplicate
 }: {
@@ -33,7 +41,13 @@ function SortableRow({
   index: number
   isLocked: boolean
   isActive: boolean
+  isNew: boolean
+  isDelete: boolean
   onDurationChange?: (id: number, delta: number) => void
+  onNameChange?: (id: number, name: string) => void
+  onColorChange?: (id: number, color: string) => void
+  onPreviewSubject?: (id: number) => void
+  onFocusPreview?: (id: number) => void
   onDelete?: (id: number) => void
   onDuplicate?: (id: number) => void
 }) {
@@ -58,6 +72,8 @@ function SortableRow({
       className={[
         styles.subjectRow,
         isActive ? styles.active : '',
+        isNew ? styles.justAdded : '',
+        isDelete ? styles.deleteBurst : '',
         !isLocked ? styles.draggable : '',
         isDragging ? styles.placeholder : ''
       ].join(' ')}
@@ -74,13 +90,33 @@ function SortableRow({
       />
       
       <div className={styles.info}>
-        <span className={styles.name} style={{ color: subject.color }}>{subject.name}</span>
+        <div className={styles.nameRow}>
+          <input
+            className={styles.nameInput}
+            value={subject.name}
+            onChange={(e) => onNameChange?.(subject.id, e.target.value)}
+            onPointerDown={e => e.stopPropagation()}
+            onFocus={() => onFocusPreview?.(subject.id)}
+            disabled={isLocked}
+            style={{ color: subject.color }}
+          />
+          <input
+            className={styles.colorPicker}
+            type="color"
+            value={subject.color}
+            onChange={(e) => onColorChange?.(subject.id, e.target.value)}
+            onPointerDown={e => e.stopPropagation()}
+            onFocus={() => onFocusPreview?.(subject.id)}
+            disabled={isLocked}
+            aria-label="Color"
+          />
+        </div>
         <div className={styles.durationControl}>
           <span>{(subject.duration ?? 0.1).toFixed(2)}s</span>
           {!isLocked && (
             <>
-              <button className={styles.durationBtn} onPointerDown={e => e.stopPropagation()} onClick={() => onDurationChange?.(subject.id, -0.05)}>-</button>
-              <button className={styles.durationBtn} onPointerDown={e => e.stopPropagation()} onClick={() => onDurationChange?.(subject.id, 0.05)}>+</button>
+              <button className={styles.durationBtn} onPointerDown={e => e.stopPropagation()} onClick={() => onDurationChange?.(subject.id, -0.05)} onFocus={() => onFocusPreview?.(subject.id)}>-</button>
+              <button className={styles.durationBtn} onPointerDown={e => e.stopPropagation()} onClick={() => onDurationChange?.(subject.id, 0.05)} onFocus={() => onFocusPreview?.(subject.id)}>+</button>
             </>
           )}
         </div>
@@ -88,6 +124,18 @@ function SortableRow({
 
       {!isLocked && (
         <div className={styles.actions}>
+          <button
+            className={styles.actionIcon}
+            onClick={() => onPreviewSubject?.(subject.id)}
+            title="Preview"
+            type="button"
+            onPointerDown={e => e.stopPropagation()}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
           <button
             className={styles.actionIcon}
             onClick={() => onDuplicate?.(subject.id)}
@@ -107,7 +155,12 @@ function SortableRow({
             type="button"
             onPointerDown={e => e.stopPropagation()}
           >
-            ×
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 6h18"/>
+              <path d="M8 6V4h8v2"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+            </svg>
           </button>
         </div>
       )}
@@ -117,19 +170,19 @@ function SortableRow({
 
 export default function AssetsTimeline({
   subjects,
-  mode,
+  isLocked = false,
   onReorder,
   onDurationChange,
+  onNameChange,
+  onColorChange,
+  onPreviewSubject,
+  onFocusPreview,
   onDelete,
   onDuplicate,
   currentPlayingIndex,
-  previewStyle = 'highlight',
-  onPreviewStyleChange,
-  bgm = 'none',
-  onBgmChange
+  newlyAddedId,
+  deleteEffectId
 }: AssetsTimelineProps) {
-  const isLocked = mode === 'editing' || mode === 'previewing'
-  const isPreviewing = mode === 'previewing'
   const [activeId, setActiveId] = useState<number | null>(null)
   const ids = useMemo(() => subjects.map(subject => subject.id), [subjects])
 
@@ -143,6 +196,7 @@ export default function AssetsTimeline({
     if (isLocked) return
     const { active, over } = event
     if (!over) return
+    if (over.id === 'trash') return
     const activeIndex = subjects.findIndex(s => s.id === active.id)
     const overIndex = subjects.findIndex(s => s.id === over.id)
     if (activeIndex === -1 || overIndex === -1) return
@@ -163,43 +217,6 @@ export default function AssetsTimeline({
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerRow}>
-          <span className={styles.title}>TIMELINE</span>
-          <span className={`${styles.lockStatus} ${isLocked ? styles.active : ''}`}>
-            {isLocked ? 'LOCKED' : 'REORDER'}
-          </span>
-        </div>
-        
-        <div className={styles.controls}>
-          <label className={styles.control}>
-            <span className={styles.controlLabel}>STYLE</span>
-            <select
-              className={styles.select}
-              value={previewStyle}
-              onChange={(e) => onPreviewStyleChange?.(e.target.value as 'highlight' | 'solid')}
-              disabled={isPreviewing}
-            >
-              <option value="highlight">HIGHLIGHT</option>
-              <option value="solid">SOLID COLOR</option>
-            </select>
-          </label>
-          <label className={styles.control}>
-            <span className={styles.controlLabel}>BGM</span>
-            <select
-              className={styles.select}
-              value={bgm}
-              onChange={(e) => onBgmChange?.(e.target.value as 'none' | 'all-my-fellas.mp3' | 'whats-wrong-with-u.mp3')}
-              disabled={isPreviewing}
-            >
-              <option value="none">NONE</option>
-              <option value="all-my-fellas.mp3">ALL MY FELLAS</option>
-              <option value="whats-wrong-with-u.mp3">WHATS WRONG WITH U</option>
-            </select>
-          </label>
-        </div>
-      </div>
-
       <DndContext
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
@@ -208,11 +225,11 @@ export default function AssetsTimeline({
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          <div className={styles.list}>
+          <div className={`${styles.list} ${isLocked ? styles.listLocked : ''}`}>
             {subjects.length === 0 ? (
               <div className={styles.emptyState}>
                 <p>NO SUBJECTS</p>
-                <p>Select & Add from Canvas</p>
+                <p>SELECT & ADD FROM CANVAS</p>
               </div>
             ) : (
               subjects.map((subject, index) => (
@@ -222,7 +239,13 @@ export default function AssetsTimeline({
                   index={index}
                   isLocked={isLocked}
                   isActive={currentPlayingIndex === index}
+                  isNew={subject.id === newlyAddedId}
+                  isDelete={subject.id === deleteEffectId}
                   onDurationChange={onDurationChange}
+                  onNameChange={onNameChange}
+                  onColorChange={onColorChange}
+                  onPreviewSubject={onPreviewSubject}
+                  onFocusPreview={onFocusPreview}
                   onDelete={onDelete}
                   onDuplicate={onDuplicate}
                 />
@@ -243,7 +266,7 @@ export default function AssetsTimeline({
                   draggable={false}
                 />
                 <div className={styles.info}>
-                  <span className={styles.name} style={{ color: activeSubject.color }}>{activeSubject.name}</span>
+                  <span className={styles.nameText} style={{ color: activeSubject.color }}>{activeSubject.name}</span>
                   <div className={styles.durationControl}>
                     <span>{(activeSubject.duration ?? 0.1).toFixed(2)}s</span>
                   </div>

@@ -2,11 +2,7 @@ import styles from './TopBar.module.css'
 
 interface TopBarProps {
   onExport?: () => void
-  onPlayToggle?: () => void
-  onLoopToggle?: () => void
-  isPlaying?: boolean
-  isLooping?: boolean
-  canPlay?: boolean
+  onHelp?: () => void
   showActions?: boolean
   status?: string
   statusColor?: string
@@ -14,14 +10,10 @@ interface TopBarProps {
 
 export default function TopBar({
   onExport,
-  onPlayToggle,
-  onLoopToggle,
-  isPlaying = false,
-  isLooping = false,
-  canPlay = true,
+  onHelp,
   showActions = true,
   status,
-  statusColor = '#FFFFFF'
+  statusColor = '#FFFFFF',
 }: TopBarProps) {
   return (
     <header className={styles.topBar}>
@@ -42,21 +34,7 @@ export default function TopBar({
 
       {showActions && (
         <div className={styles.right}>
-          <button 
-            className={styles.actionButton}
-            onClick={onPlayToggle}
-            disabled={!canPlay}
-          >
-            {isPlaying ? 'Pause' : 'Play'}
-          </button>
-          <button 
-            className={`${styles.actionButton} ${isLooping ? styles.toggleActive : ''}`}
-            onClick={onLoopToggle}
-            disabled={!canPlay}
-          >
-            Loop
-          </button>
-          <button className={styles.actionButton}>Help ?</button>
+          <button className={styles.actionButton} onClick={onHelp}>Help</button>
           <button className={`${styles.actionButton} ${styles.exportButton}`} onClick={onExport}>
             Export
           </button>

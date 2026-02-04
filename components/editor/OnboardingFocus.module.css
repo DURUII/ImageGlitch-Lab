@@ -1,0 +1,93 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+.focus {
+  position: absolute;
+  border: 1px solid var(--white);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+}
+
+.canvasFocus {
+  top: calc(var(--bar-height) + 12px);
+  left: 12px;
+  width: calc(var(--canvas-width, 45vw) - 24px);
+  height: calc(100vh - var(--bar-height) - 80px);
+}
+
+.dockFocus {
+  top: calc(var(--bar-height) + 12px);
+  left: calc(var(--canvas-width, 45vw) + 12px);
+  width: 80px;
+  height: calc(100vh - var(--bar-height) - 80px);
+}
+
+.card {
+  position: absolute;
+  width: 300px;
+  background: rgba(0, 0, 0, 0.92);
+  border: 1px solid var(--gray-800);
+  padding: 16px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6);
+}
+
+.cardCanvas {
+  top: calc(var(--bar-height) + 24px);
+  left: 24px;
+}
+
+.cardDock {
+  top: calc(var(--bar-height) + 24px);
+  left: calc(var(--canvas-width, 45vw) + 112px);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--white);
+  margin-bottom: 8px;
+}
+
+.line {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-300);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.skip,
+.next {
+  background: transparent;
+  border: 1px solid var(--gray-700);
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.next {
+  background: var(--white);
+  color: var(--black);
+  border-color: var(--white);
+}
+
+.skip:hover,
+.next:hover {
+  border-color: var(--white);
+}

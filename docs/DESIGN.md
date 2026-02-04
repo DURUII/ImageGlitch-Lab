@@ -184,6 +184,24 @@ padding: 0 48px;        /* Desktop */
 .item:nth-child(3) { animation-delay: 0.2s; }
 ```
 
+#### Mask Outline Breathing (Sample)
+Purpose: keep the selection feeling alive without heavy interaction. Use a subtle pulse and soft glow.
+```css
+.maskOutline {
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6))
+    drop-shadow(0 0 14px rgba(255, 255, 255, 0.35));
+  animation: outlinePulse 1.8s var(--ease-out-expo) infinite;
+}
+
+@keyframes outlinePulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+```
+
 ---
 
 ## 5. Sound Design

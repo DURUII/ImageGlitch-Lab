@@ -87,15 +87,12 @@
   pointer-events: none;
 }
 
-.hintText {
-  position: absolute;
-  bottom: 16px;
-  left: 24px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--gray-500);
-  pointer-events: none;
-  z-index: 40;
+.editing {
+  cursor: crosshair;
+}
+
+.locked {
+  cursor: default;
 }
 
 .maskOverlay {
@@ -107,6 +104,25 @@
   pointer-events: none;
   opacity: 0.8;
 }
+
+.maskOutline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6)) drop-shadow(0 0 14px rgba(255, 255, 255, 0.35));
+  animation: outlinePulse 1.8s var(--ease-out-expo) infinite;
+}
+
+@keyframes outlinePulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
 
 .point {
   position: absolute;
@@ -280,10 +296,22 @@
 
 /* --- Encoding Overlay (CRT Style) --- */
 
-.encodingOverlay {
+.encodingWrap {
   position: absolute;
   inset: 0;
   z-index: 50;
+  pointer-events: none;
+  transition: opacity 0.4s ease-out;
+  opacity: 1;
+}
+
+.encodingExit {
+  opacity: 0;
+}
+
+.encodingOverlay {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
   display: flex;
   flex-direction: column;

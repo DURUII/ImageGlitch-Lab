@@ -11,6 +11,7 @@ interface CanvasProps {
   encodingProgress?: number // 0-1, null if not encoding
   imageWidthPx?: number
   previewMaskSrc?: string | null
+  focusMaskSrc?: string | null
   onPointAdd?: (x: number, y: number, type: 0 | 1) => void
   onUpload?: (file: File) => void
   onUseSample?: () => void
@@ -57,16 +58,53 @@ export default function Canvas({
   encodingProgress,
   imageWidthPx,
   previewMaskSrc,
+  focusMaskSrc,
   onPointAdd,
   onUpload,
   onUseSample
 }: CanvasProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
-  const overlaySrc = mode === 'previewing' ? previewMaskSrc : maskImageSrc
+  const overlaySrc = mode === 'previewing' ? previewMaskSrc : (focusMaskSrc ?? maskImageSrc)
   const [flickerIndices, setFlickerIndices] = useState<number[]>([])
+  const [encodingVisible, setEncodingVisible] = useState(false)
+  const [encodingFade, setEncodingFade] = useState(false)
+  const [encodingValue, setEncodingValue] = useState(0)
+  const encodingTimerRef = useRef<number | null>(null)
   const heroText = useMemo(() => 'POWER-ON GLITCH', [])
   const heroLetters = useMemo(() => heroText.split(''), [heroText])
+
+  const isEncodingActive = typeof encodingProgress === 'number'
+
+  useEffect(() => {
+    if (isEncodingActive) {
+      if (encodingTimerRef.current) {
+        window.clearTimeout(encodingTimerRef.current)
+        encodingTimerRef.current = null
+      }
+      setEncodingVisible(true)
+      setEncodingFade(false)
+      setEncodingValue(encodingProgress as number)
+      return
+    }
+
+    if (encodingVisible) {
+      setEncodingFade(true)
+      encodingTimerRef.current = window.setTimeout(() => {
+        setEncodingVisible(false)
+        setEncodingFade(false)
+        encodingTimerRef.current = null
+      }, 420)
+    }
+  }, [isEncodingActive, encodingProgress, encodingVisible])
+
+  useEffect(() => {
+    return () => {
+      if (encodingTimerRef.current) {
+        window.clearTimeout(encodingTimerRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (imageSrc) return
@@ -98,6 +136,7 @@ export default function Canvas({
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (mode !== 'editing' || !onPointAdd) return
     if (!imageRef.current) return
+    if (isEncodingActive) return
 
     const rect = imageRef.current.getBoundingClientRect()
 
@@ -185,7 +224,12 @@ export default function Canvas({
 
   return (
     <div 
-      className={`${styles.container} ${styles.withImage}`}
+      className={[
+        styles.container,
+        styles.withImage,
+        mode === 'editing' && !isEncodingActive ? styles.editing : '',
+        mode !== 'editing' || isEncodingActive ? styles.locked : ''
+      ].join(' ')}
       onPointerDown={handlePointerDown}
       onContextMenu={e => e.preventDefault()}
       onDragOver={e => e.preventDefault()}
@@ -202,21 +246,23 @@ export default function Canvas({
           alt="Source" 
           className={styles.sourceImg}
           ref={imageRef}
-          style={{ cursor: mode === 'editing' ? 'crosshair' : 'default' }}
         />
         
-        {/* Hint Text */}
-        {!encodingProgress && mode === 'editing' && (
-          <div className={styles.hintText}>
-            Click to add points · Space to preview
+        {encodingVisible && (
+          <div className={`${styles.encodingWrap} ${encodingFade ? styles.encodingExit : ''}`}>
+            <EncodingOverlay progress={encodingValue} />
           </div>
         )}
 
-        {encodingProgress !== undefined && (
-          <EncodingOverlay progress={encodingProgress} />
+        {overlaySrc && !isEncodingActive && (
+          <img 
+            src={overlaySrc} 
+            alt="Mask Outline" 
+            className={styles.maskOutline}
+          />
         )}
 
-        {overlaySrc && !encodingProgress && (
+        {overlaySrc && !isEncodingActive && (
           <img 
             src={overlaySrc} 
             alt="Mask" 
@@ -233,7 +279,7 @@ export default function Canvas({
               top: `${p.y}%`,
               color: color,
               borderColor: color,
-              display: encodingProgress ? 'none' : 'flex'
+              display: isEncodingActive ? 'none' : 'flex'
             }}
           >
             +

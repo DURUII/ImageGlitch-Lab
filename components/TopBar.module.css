@@ -43,10 +43,35 @@
   background: var(--white);
   position: relative;
   display: inline-block;
+  overflow: hidden;
 }
 
 .status:hover {
-  animation: glitchText 0.3s cubic-bezier(0.65, 0, 0.35, 1);
+  color: var(--black);
+}
+
+.status::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(0, 0, 0, 0.15),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.status:hover::before {
+  opacity: 1;
+  animation: waveSpin 0.7s linear infinite;
+}
+
+@keyframes waveSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes glitchText {
@@ -65,6 +90,7 @@
   padding: 8px 12px;
   font-family: var(--font-mono);
   font-size: 12px;
+  line-height: 1;
   cursor: pointer;
   transition: all 0.2s ease;
   text-transform: uppercase;
@@ -90,10 +116,4 @@
 .exportButton:hover {
   background: transparent;
   color: var(--white);
-}
-
-.toggleActive {
-  border-color: var(--white);
-  color: var(--black);
-  background: var(--white);
 }

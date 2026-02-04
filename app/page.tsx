@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, type CSSProperties } from 'react'
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from 'react'
 import { zipSync } from 'fflate'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile } from '@ffmpeg/util'
@@ -11,6 +11,8 @@ import Footer from '@/components/Footer'
 import Canvas from '@/components/editor/Canvas'
 import CommitDock from '@/components/editor/CommitDock'
 import AssetsTimeline from '@/components/editor/AssetsTimeline'
+import OnboardingOverlay from '@/components/editor/OnboardingOverlay'
+import OnboardingFocus from '@/components/editor/OnboardingFocus'
 import ExportModal from '@/components/ExportModal'
 import { useSAM, type Point, type MaskResult } from '@/hooks/useSAM'
 import type { Subject, BGM, AppMode } from '@/types'
@@ -163,7 +165,7 @@ export default function Home() {
   const [imageWidthPx, setImageWidthPx] = useState<number | null>(null)
   const workspaceRef = useRef<HTMLDivElement>(null)
   const [previewStyle, setPreviewStyle] = useState<'highlight' | 'solid'>('highlight')
-  const [bgm, setBgm] = useState<'none' | 'all-my-fellas.mp3' | 'whats-wrong-with-u.mp3'>('none')
+  const [bgm, setBgm] = useState<'none' | 'all-my-fellas.mp3' | 'whats-wrong-with-u.mp3'>('all-my-fellas.mp3')
   const [isLooping, setIsLooping] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentPlayingIndex, setCurrentPlayingIndex] = useState<number | null>(null)
@@ -188,6 +190,13 @@ export default function Home() {
   
   // Fake Encoding Progress (0-1)
   const [encodingProgress, setEncodingProgress] = useState<number | null>(null)
+
+  // Onboarding
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [onboardingStep, setOnboardingStep] = useState(0)
+  const onboardingTotal = 7
+  const [focusGuideOpen, setFocusGuideOpen] = useState(false)
+  const [focusGuideStep, setFocusGuideStep] = useState(0)
   
   // Staging Subject (Current one being edited)
   const [stagingPoints, setStagingPoints] = useState<Point[]>([])
@@ -196,6 +205,9 @@ export default function Home() {
   
   // Confirmed Subjects
   const [subjects, setSubjects] = useState<Subject[]>([])
+  const [lastAddedId, setLastAddedId] = useState<number | null>(null)
+  const [deleteEffectId, setDeleteEffectId] = useState<number | null>(null)
+  const [focusPreviewId, setFocusPreviewId] = useState<number | null>(null)
   
   // SAM
   const { 
@@ -211,6 +223,7 @@ export default function Home() {
   const isModelReady = samStatus === 'model_ready' || samStatus === 'encoded'
   const stagingColor = generateColor(subjects.length)
   const canPlay = subjects.length > 0 && encodingProgress === null
+  const isTimelineLocked = mode === 'previewing' || encodingProgress !== null || stagingPoints.length > 0 || !!stagingMask
 
   useEffect(() => {
     subjectsRef.current = subjects
@@ -278,19 +291,8 @@ export default function Home() {
     // loadImage(sample).then(() => setUploadedImage(sample))
   }, [])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== 'Space') return
-      const target = e.target as HTMLElement | null
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) {
-        return
-      }
-      e.preventDefault()
-      togglePreviewRef.current()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  // useEffect moved down to avoid ReferenceError
+
 
   useEffect(() => {
     if (!imageAspect) {
@@ -376,14 +378,14 @@ export default function Home() {
     }
   }
 
-  const runPreview = async (token: number) => {
-    const getMaskFor = (subject: Subject): string | null => {
-      if (styleRef.current === 'highlight') {
-        return subject.brightenedMaskUrl || subject.coloredMaskUrl || null
-      }
-      return subject.coloredMaskUrl || null
+  const getMaskFor = (subject: Subject): string | null => {
+    if (styleRef.current === 'highlight') {
+      return subject.brightenedMaskUrl || subject.coloredMaskUrl || null
     }
+    return subject.coloredMaskUrl || null
+  }
 
+  const runPreview = async (token: number) => {
     while (token === previewTokenRef.current) {
       const list = subjectsRef.current
       if (list.length === 0) break
@@ -405,6 +407,7 @@ export default function Home() {
   const startPreview = () => {
     if (!canPlay) return
     prevModeRef.current = mode
+    setFocusPreviewId(null)
     setMode('previewing')
     setIsPlaying(true)
     const token = (previewTokenRef.current += 1)
@@ -432,6 +435,16 @@ export default function Home() {
     }
     startPreview()
   }
+
+  const toggleSubjectPreview = (id: number) => {
+    setFocusPreviewId(prev => (prev === id ? null : id))
+  }
+
+  const focusPreviewSrc = (() => {
+    if (!focusPreviewId) return null
+    const subject = subjects.find(s => s.id === focusPreviewId)
+    return subject ? getMaskFor(subject) : null
+  })()
 
   useEffect(() => {
     togglePreviewRef.current = togglePreview
@@ -618,13 +631,13 @@ export default function Home() {
       if (modes.includes('cropped')) {
         const url = subject.previewUrl || await createCroppedPreviewUrl(subject.maskResult, uploadedImage)
         if (url) {
-          files[`A_cropped/${baseName}`] = dataUrlToUint8(url)
+          files[`1.cropped/${baseName}`] = dataUrlToUint8(url)
         }
       }
       if (modes.includes('fullsize')) {
         const url = await createFullsizeCutoutUrl(subject.maskResult, uploadedImage)
         if (url) {
-          files[`B_fullsize/${baseName}`] = dataUrlToUint8(url)
+          files[`2.fullsize/${baseName}`] = dataUrlToUint8(url)
         }
       }
     })
@@ -675,6 +688,12 @@ export default function Home() {
     setStagingMask(null)
     setStagingColoredMaskUrl(null)
     setMode('editing')
+    const hasGuided = typeof window !== 'undefined' && window.localStorage.getItem('imageglitch_onboarded') === '1'
+    if (!hasGuided) {
+      setFocusGuideOpen(true)
+      setFocusGuideStep(0)
+    }
+    setLastAddedId(null)
     
     // 2. Trigger layout transition after short delay
     setTimeout(() => {
@@ -728,7 +747,7 @@ export default function Home() {
     }
   }
 
-  const handleCommit = async () => {
+  const handleCommit = useCallback(async () => {
     if (!stagingMask || !uploadedImage) return
 
     try {
@@ -750,6 +769,8 @@ export default function Home() {
       }
 
       setSubjects([...subjects, newSubject])
+      setLastAddedId(newSubject.id)
+      window.setTimeout(() => setLastAddedId(null), 500)
       
       // Reset staging
       setStagingPoints([])
@@ -759,18 +780,13 @@ export default function Home() {
     } catch (err) {
       console.error('Commit error:', err)
     }
-  }
+  }, [stagingMask, uploadedImage, subjects, stagingColor, stagingPoints, stagingColoredMaskUrl])
 
-  const handleResetStaging = () => {
+  const handleResetStaging = useCallback(() => {
     setStagingPoints([])
     setStagingMask(null)
     setStagingColoredMaskUrl(null)
-  }
-
-  const handleExitEditing = () => {
-    handleResetStaging()
-    setMode('arrange')
-  }
+  }, [])
 
   const handleReorder = (fromIndex: number, toIndex: number) => {
     setSubjects(prev => {
@@ -783,6 +799,94 @@ export default function Home() {
     })
   }
 
+  const handleDeleteSubject = (id: number) => {
+    setDeleteEffectId(id)
+    window.setTimeout(() => {
+      setSubjects(prev => prev.filter(s => s.id !== id))
+      if (focusPreviewId === id) setFocusPreviewId(null)
+      setDeleteEffectId(null)
+    }, 140)
+  }
+
+  const handleOnboardingNext = () => {
+    setOnboardingStep(prev => {
+      const next = prev + 1
+      if (next >= onboardingTotal) {
+        setOnboardingOpen(false)
+        return prev
+      }
+      return next
+    })
+  }
+
+  const handleOnboardingSkip = () => {
+    setOnboardingOpen(false)
+  }
+
+  const handleFocusGuideNext = () => {
+    setFocusGuideStep(prev => {
+      const next = prev + 1
+      if (next >= 2) {
+        setFocusGuideOpen(false)
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('imageglitch_onboarded', '1')
+        }
+        return prev
+      }
+      return next
+    })
+  }
+
+  const handleFocusGuideSkip = () => {
+    setFocusGuideOpen(false)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('imageglitch_onboarded', '1')
+    }
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) {
+        return
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault()
+        const active = document.activeElement as HTMLElement | null
+        if (active && active.tagName === 'BUTTON') {
+          active.blur()
+        }
+        togglePreviewRef.current()
+        return
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+        e.preventDefault()
+        setIsExportOpen(true)
+        return
+      }
+
+      if (e.code === 'Enter') {
+        if (mode === 'editing' && stagingMask && encodingProgress === null) {
+          e.preventDefault()
+          handleCommit()
+        }
+        return
+      }
+
+      if (e.code === 'Escape') {
+        if (mode === 'editing' && stagingPoints.length > 0) {
+          e.preventDefault()
+          handleResetStaging()
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [mode, stagingMask, stagingPoints.length, encodingProgress, handleCommit, handleResetStaging])
+
+
   // Determine Status and Color
   let statusText = ''
   let statusColor = '#FFFFFF'
@@ -790,32 +894,28 @@ export default function Home() {
   if (encodingProgress !== null) {
     statusText = 'ENCODING'
     statusColor = '#FFFF00'
-  } else if (mode === 'editing') {
-    statusText = 'EDITING'
-    statusColor = '#00FF00'
   } else if (mode === 'previewing') {
     statusText = 'PREVIEWING'
     statusColor = '#00FFFF'
   } else {
-    statusText = 'ARRANGE'
+    statusText = 'EDITING'
     statusColor = '#FFFFFF'
   }
 
   // --- Render ---
 
-  const workspaceStyle = canvasWidth
+  const layoutStyle = canvasWidth
     ? ({ ['--canvas-width' as any]: `${canvasWidth}px` } as CSSProperties)
     : undefined
 
   return (
-    <main className={styles.main}>
+    <main className={styles.main} style={layoutStyle}>
       <TopBar 
         onExport={() => setIsExportOpen(true)}
-        onPlayToggle={togglePreview}
-        onLoopToggle={() => setIsLooping(prev => !prev)}
-        isPlaying={isPlaying}
-        isLooping={isLooping}
-        canPlay={canPlay}
+        onHelp={() => {
+          setOnboardingStep(0)
+          setOnboardingOpen(true)
+        }}
         showActions={isLayoutReady}
         status={isLayoutReady ? statusText : undefined}
         statusColor={statusColor}
@@ -824,7 +924,7 @@ export default function Home() {
       <div 
         ref={workspaceRef}
         className={`${styles.workspace} ${isLayoutReady ? styles.layoutReady : ''}`}
-        style={workspaceStyle}
+        style={layoutStyle}
       >
         {/* Left: Canvas */}
         <div className={styles.canvasArea}>
@@ -832,6 +932,7 @@ export default function Home() {
             imageSrc={uploadedImage}
             maskImageSrc={stagingColoredMaskUrl}
             previewMaskSrc={previewMaskSrc}
+            focusMaskSrc={focusPreviewSrc}
             points={stagingPoints}
             color={stagingColor}
             mode={mode}
@@ -848,10 +949,18 @@ export default function Home() {
           <CommitDock 
             onAdd={handleCommit}
             onReset={handleResetStaging}
-            onExit={handleExitEditing}
             canAdd={!!stagingMask}
             canReset={stagingPoints.length > 0}
             mode={mode}
+            previewStyle={previewStyle}
+            onPreviewStyleChange={setPreviewStyle}
+            bgm={bgm}
+            onBgmChange={setBgm}
+            isPlaying={isPlaying}
+            isLooping={isLooping}
+            canPlay={canPlay}
+            onPlayToggle={togglePreview}
+            onLoopToggle={() => setIsLooping(prev => !prev)}
           />
         </div>
 
@@ -859,13 +968,24 @@ export default function Home() {
         <div className={styles.timelineArea}>
           <AssetsTimeline 
             subjects={subjects}
-            mode={mode}
+            isLocked={isTimelineLocked}
             onReorder={handleReorder}
-            onDelete={(id) => setSubjects(subjects.filter(s => s.id !== id))}
+            onNameChange={(id, name) => {
+              setSubjects(subjects.map(s => (s.id === id ? { ...s, name } : s)))
+            }}
+            onColorChange={(id, color) => {
+              setSubjects(subjects.map(s => (s.id === id ? { ...s, color } : s)))
+            }}
+            onPreviewSubject={toggleSubjectPreview}
+            onFocusPreview={(id) => setFocusPreviewId(id)}
+            onDelete={handleDeleteSubject}
             onDuplicate={(id) => {
               const sub = subjects.find(s => s.id === id)
               if (sub) {
-                setSubjects([...subjects, { ...sub, id: Date.now() }])
+                const newId = Date.now()
+                setSubjects([...subjects, { ...sub, id: newId }])
+                setLastAddedId(newId)
+                window.setTimeout(() => setLastAddedId(null), 500)
               }
             }}
             onDurationChange={(id, delta) => {
@@ -878,10 +998,8 @@ export default function Home() {
               }))
             }}
             currentPlayingIndex={currentPlayingIndex}
-            previewStyle={previewStyle}
-            onPreviewStyleChange={setPreviewStyle}
-            bgm={bgm}
-            onBgmChange={setBgm}
+            newlyAddedId={lastAddedId}
+            deleteEffectId={deleteEffectId}
           />
         </div>
       </div>
@@ -889,6 +1007,20 @@ export default function Home() {
       <Footer 
         modelProgress={typeof loadingProgress?.progress === 'number' ? loadingProgress.progress : 0} 
         modelReady={isModelReady} 
+      />
+
+      <OnboardingOverlay
+        isOpen={onboardingOpen && isLayoutReady}
+        step={onboardingStep}
+        onNext={handleOnboardingNext}
+        onSkip={handleOnboardingSkip}
+      />
+
+      <OnboardingFocus
+        isOpen={focusGuideOpen && isLayoutReady}
+        step={focusGuideStep}
+        onNext={handleFocusGuideNext}
+        onSkip={handleFocusGuideSkip}
       />
 
       <ExportModal
