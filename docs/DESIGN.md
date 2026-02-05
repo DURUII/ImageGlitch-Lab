@@ -363,6 +363,32 @@ EXPORT                   Export Your Video
 
 ---
 
+## 11. Implementation Pitfalls & Learnings
+
+### Flexbox & Scrolling
+
+- **Problem**: Flex items in a scrollable container (e.g., timeline items) shrink indefinitely as more are added.
+- **Solution**: Always set `flex-shrink: 0` on items in a scrollable flex container to preserve their natural size.
+
+### Tooltip Interactions
+
+- **Problem**: Tooltips disappear when moving the mouse from the trigger to the tooltip (gap issue).
+- **Solution**: Add an invisible "bridge" pseudo-element (`::before`) to the tooltip to cover the gap between the trigger and the tooltip content.
+- **Problem**: Tooltip hit areas on text nodes are hard to target.
+- **Solution**: Wrap text in a container (div) and apply the hover trigger to the container, not the text span.
+
+### Hover State Management
+
+- **Problem**: Using React state (`onMouseEnter`/`onMouseLeave`) for simple UI tooltips causes flickering and complex state management.
+- **Solution**: Prefer CSS `:hover` states with `opacity` and `transform` transitions for smoother performance and simpler code.
+
+### Z-Index Context
+
+- **Problem**: Tooltips get clipped or hidden by adjacent elements.
+- **Solution**: Ensure tooltip containers have a higher `z-index` and check stacking contexts of parent elements.
+
+---
+
 ## References
 
 - [ToyFight.co](https://toyfight.co) - Primary visual reference

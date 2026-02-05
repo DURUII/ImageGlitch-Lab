@@ -37,20 +37,21 @@ export default function Footer({ modelProgress = 0, modelReady = false, modelSta
           <div className={`${styles.statusLight} ${modelReady ? styles.ready : styles.loading}`} />
           
           {/* Tech info with tooltip */}
-          <div 
-            className={styles.techInfo}
-            onMouseEnter={() => setShowTech(true)}
-            onMouseLeave={() => setShowTech(false)}
-          >
+          <div className={styles.techInfo}>
             <span className={styles.link}>
               {isLoading ? `${statusLabel} ${progress}%` : '100% LOCAL PROCESSING & NO DATA COLLECTED'}
             </span>
-            {showTech && (
-              <div className={styles.techTooltip}>
-                <span className={styles.techLabel}>MODEL</span>
-                <span className={styles.techValue}>slimsam-77-uniform</span>
-              </div>
-            )}
+            <div className={styles.techTooltip}>
+              <span className={styles.techLabel}>POWERED BY</span>
+              <a 
+                href="https://huggingface.co/Xenova/slimsam-77-uniform"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.techValue}
+              >
+                slimsam-77-uniform
+              </a>
+            </div>
           </div>
         </div>
 

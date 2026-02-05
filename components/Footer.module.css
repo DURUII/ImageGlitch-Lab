@@ -85,6 +85,14 @@
 .techInfo {
   position: relative;
   cursor: help;
+  display: flex;
+  align-items: center;
+}
+
+.techInfo:hover .techTooltip {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .link {
@@ -106,18 +114,30 @@
 
 .techTooltip {
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 8px);
   left: 0;
-  margin-bottom: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: var(--bg-secondary);
   border: 1px solid var(--gray-800);
   z-index: 100;
-  animation: fadeIn 0.15s ease;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
   white-space: nowrap;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.techTooltip::before {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
 }
 
 .techLabel {
@@ -136,6 +156,11 @@
   color: var(--accent-green);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  text-decoration: none;
+}
+
+.techValue:hover {
+  text-decoration: underline;
 }
 
 .divider {

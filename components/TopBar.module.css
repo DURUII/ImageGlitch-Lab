@@ -14,6 +14,18 @@
   gap: 16px;
 }
 
+.logoWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.logoWrapper:hover .aboutTooltip {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .logo {
   font-family: var(--font-display);
   font-weight: 700;
@@ -106,33 +118,10 @@
   text-transform: uppercase;
 }
 
-.about {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.aboutButton {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--white);
-  padding: 8px 10px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.2s ease;
-}
-
-.aboutButton:hover {
-  border-color: var(--gray-600);
-}
-
 .aboutTooltip {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0;
   width: 320px;
   padding: 0.75rem 0.9rem;
   background: var(--bg-secondary);
@@ -144,10 +133,14 @@
   z-index: 100;
 }
 
-.about:hover .aboutTooltip {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+.aboutTooltip::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
 }
 
 .aboutTitle {
