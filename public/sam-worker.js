@@ -93,7 +93,7 @@ self.onmessage = async (e) => {
     try {
       const reshaped = image_inputs.reshaped_input_sizes[0];
       const points = data.points.map(p => [p.x * reshaped[1] / 100, p.y * reshaped[0] / 100]);
-      const labels = data.points.map(p => BigInt(p.label || 1));
+      const labels = data.points.map(p => BigInt(p.label ?? 1));
 
       const input_points = new Tensor(
         'float32',

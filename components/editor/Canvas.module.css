@@ -126,32 +126,34 @@
 
 .point {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   transform: translate(-50%, -50%);
-  border: 2px solid;
+  border: 2px solid var(--point-color, var(--white));
   border-radius: 50%;
   z-index: 20;
   pointer-events: none;
   
-  /* Center the + sign */
+  /* Center the icon */
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 1;
-  font-weight: 700;
+  color: var(--icon-color, var(--black));
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
 }
 
 .point.positive {
-  background: currentColor;
-  color: var(--black); /* Contrast for + sign */
+  background: var(--point-color, var(--white));
 }
 
 .point.negative {
-  background: transparent;
-  color: currentColor; /* Border color for + sign */
+  background: var(--point-color, var(--white));
+}
+
+.pointIcon {
+  width: 10px;
+  height: 10px;
 }
 
 .placeholder {

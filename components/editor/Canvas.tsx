@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Minus, Plus } from 'lucide-react'
 import styles from './Canvas.module.css'
 import type { Point } from '@/hooks/useSAM'
 
@@ -15,6 +16,21 @@ interface CanvasProps {
   onPointAdd?: (x: number, y: number, type: 0 | 1) => void
   onUpload?: (file: File) => void
   onUseSample?: () => void
+}
+
+const getIconColor = (hexColor: string): string => {
+  const normalized = hexColor.trim().toLowerCase()
+  const match = normalized.match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i)
+  if (!match) return '#ffffff'
+  let hex = match[1]
+  if (hex.length === 3) {
+    hex = hex.split('').map(ch => ch + ch).join('')
+  }
+  const r = parseInt(hex.slice(0, 2), 16) / 255
+  const g = parseInt(hex.slice(2, 4), 16) / 255
+  const b = parseInt(hex.slice(4, 6), 16) / 255
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  return luminance > 0.6 ? '#000000' : '#ffffff'
 }
 
 const EncodingOverlay = ({ progress }: { progress: number }) => {
@@ -150,9 +166,9 @@ export default function Canvas({
     const xPct = (clickX / rect.width) * 100
     const yPct = (clickY / rect.height) * 100
 
-    // Right click (negative) or Left click (positive)
-    const isRightClick = e.button === 2
-    onPointAdd(xPct, yPct, isRightClick ? 0 : 1)
+    // Left click only (positive)
+    if (e.button !== 0) return
+    onPointAdd(xPct, yPct, 1)
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -270,21 +286,28 @@ export default function Canvas({
           />
         )}
 
-        {points.map((p, i) => (
+        {points.map((p, i) => {
+          const iconColor = getIconColor(color)
+          return (
           <div
             key={i}
             className={`${styles.point} ${p.label === 1 ? styles.positive : styles.negative}`}
             style={{
               left: `${p.x}%`,
               top: `${p.y}%`,
-              color: color,
-              borderColor: color,
+              '--point-color': color,
+              '--icon-color': iconColor,
               display: isEncodingActive ? 'none' : 'flex'
-            }}
+            } as React.CSSProperties}
           >
-            +
+            {p.label === 1 ? (
+              <Plus className={styles.pointIcon} strokeWidth={3} aria-hidden="true" />
+            ) : (
+              <Minus className={styles.pointIcon} strokeWidth={3} aria-hidden="true" />
+            )}
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
