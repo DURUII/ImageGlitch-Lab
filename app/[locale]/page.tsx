@@ -172,6 +172,14 @@ export default function Home() {
     }
   }, [])
   // State
+  type HistorySnapshot = {
+    mode: AppMode
+    stagingPoints: Point[]
+    stagingMask: MaskResult | null
+    stagingColoredMaskUrl: string | null
+    subjects: Subject[]
+    focusPreviewId: number | null
+  }
   const [mode, setMode] = useState<AppMode>('editing') // Default to editing
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [imageAspect, setImageAspect] = useState<number | null>(null)
@@ -198,6 +206,10 @@ export default function Home() {
   const loopRef = useRef(false)
   const styleRef = useRef<'highlight' | 'solid'>('highlight')
   const togglePreviewRef = useRef<() => void>(() => {})
+  const undoStackRef = useRef<HistorySnapshot[]>([])
+  const redoStackRef = useRef<HistorySnapshot[]>([])
+  const isRestoringRef = useRef(false)
+  const deleteTimeoutRef = useRef<number | null>(null)
   
   // Layout Transitions
   const [isLayoutReady, setIsLayoutReady] = useState(false)
@@ -222,6 +234,7 @@ export default function Home() {
   const [lastAddedId, setLastAddedId] = useState<number | null>(null)
   const [deleteEffectId, setDeleteEffectId] = useState<number | null>(null)
   const [focusPreviewId, setFocusPreviewId] = useState<number | null>(null)
+
   
   // SAM
   const { 
@@ -336,6 +349,65 @@ export default function Home() {
   }, [imageAspect])
 
   const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
+  const createSnapshot = useCallback((): HistorySnapshot => {
+    return {
+      mode,
+      stagingPoints,
+      stagingMask,
+      stagingColoredMaskUrl,
+      subjects,
+      focusPreviewId
+    }
+  }, [mode, stagingPoints, stagingMask, stagingColoredMaskUrl, subjects, focusPreviewId])
+
+  const pushHistory = useCallback(() => {
+    if (isRestoringRef.current) return
+    const snapshot = createSnapshot()
+    undoStackRef.current.push(snapshot)
+    if (undoStackRef.current.length > 200) {
+      undoStackRef.current.shift()
+    }
+    redoStackRef.current = []
+  }, [createSnapshot])
+
+  const applySnapshot = useCallback((snapshot: HistorySnapshot) => {
+    isRestoringRef.current = true
+    if (deleteTimeoutRef.current) {
+      window.clearTimeout(deleteTimeoutRef.current)
+      deleteTimeoutRef.current = null
+    }
+    setDeleteEffectId(null)
+    setLastAddedId(null)
+    setMode(snapshot.mode)
+    setStagingPoints(snapshot.stagingPoints)
+    setStagingMask(snapshot.stagingMask)
+    setStagingColoredMaskUrl(snapshot.stagingColoredMaskUrl)
+    setSubjects(snapshot.subjects)
+    const focusOk = snapshot.focusPreviewId != null && snapshot.subjects.some(s => s.id === snapshot.focusPreviewId)
+    setFocusPreviewId(focusOk ? snapshot.focusPreviewId : null)
+    isRestoringRef.current = false
+  }, [])
+
+  const handleUndo = useCallback(() => {
+    if (mode === 'previewing' || encodingProgress !== null) return
+    const stack = undoStackRef.current
+    if (stack.length === 0) return
+    const current = createSnapshot()
+    const prev = stack.pop()!
+    redoStackRef.current.push(current)
+    applySnapshot(prev)
+  }, [mode, encodingProgress, createSnapshot, applySnapshot])
+
+  const handleRedo = useCallback(() => {
+    if (mode === 'previewing' || encodingProgress !== null) return
+    const stack = redoStackRef.current
+    if (stack.length === 0) return
+    const current = createSnapshot()
+    const next = stack.pop()!
+    undoStackRef.current.push(current)
+    applySnapshot(next)
+  }, [mode, encodingProgress, createSnapshot, applySnapshot])
 
   const dataUrlToUint8 = (dataUrl: string) => {
     const base64 = dataUrl.split(',')[1] || ''
@@ -702,6 +774,12 @@ export default function Home() {
     setStagingMask(null)
     setStagingColoredMaskUrl(null)
     setMode('editing')
+    undoStackRef.current = []
+    redoStackRef.current = []
+    if (deleteTimeoutRef.current) {
+      window.clearTimeout(deleteTimeoutRef.current)
+      deleteTimeoutRef.current = null
+    }
     const hasGuided = typeof window !== 'undefined' && window.localStorage.getItem('imageglitch_onboarded') === '1'
     if (!hasGuided) {
       setFocusGuideOpen(true)
@@ -747,6 +825,7 @@ export default function Home() {
 
   const handlePointAdd = async (x: number, y: number, label: 0 | 1) => {
     if (mode !== 'editing' || !uploadedImage || !isEncoded) return
+    pushHistory()
 
     const newPoints = [...stagingPoints, { x, y, label }]
     setStagingPoints(newPoints)
@@ -763,6 +842,7 @@ export default function Home() {
 
   const handleCommit = useCallback(async () => {
     if (!stagingMask || !uploadedImage) return
+    pushHistory()
 
     try {
       const [previewUrl, brightenedMaskUrl] = await Promise.all([
@@ -794,17 +874,20 @@ export default function Home() {
     } catch (err) {
       console.error('Commit error:', err)
     }
-  }, [stagingMask, uploadedImage, subjects, stagingColor, stagingPoints, stagingColoredMaskUrl])
+  }, [stagingMask, uploadedImage, subjects, stagingColor, stagingPoints, stagingColoredMaskUrl, pushHistory])
 
   const handleResetStaging = useCallback(() => {
+    if (stagingPoints.length === 0 && !stagingMask) return
+    pushHistory()
     setStagingPoints([])
     setStagingMask(null)
     setStagingColoredMaskUrl(null)
-  }, [])
+  }, [stagingPoints.length, stagingMask, pushHistory])
 
   const handleReorder = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return
+    pushHistory()
     setSubjects(prev => {
-      if (fromIndex === toIndex) return prev
       if (fromIndex < 0 || toIndex < 0 || fromIndex >= prev.length || toIndex >= prev.length) return prev
       const next = [...prev]
       const [moved] = next.splice(fromIndex, 1)
@@ -814,13 +897,50 @@ export default function Home() {
   }
 
   const handleDeleteSubject = (id: number) => {
+    pushHistory()
+    if (deleteTimeoutRef.current) {
+      window.clearTimeout(deleteTimeoutRef.current)
+      deleteTimeoutRef.current = null
+    }
     setDeleteEffectId(id)
-    window.setTimeout(() => {
+    deleteTimeoutRef.current = window.setTimeout(() => {
       setSubjects(prev => prev.filter(s => s.id !== id))
       if (focusPreviewId === id) setFocusPreviewId(null)
       setDeleteEffectId(null)
+      deleteTimeoutRef.current = null
     }, 140)
   }
+
+  const handleNameChange = useCallback((id: number, name: string) => {
+    pushHistory()
+    setSubjects(prev => prev.map(s => (s.id === id ? { ...s, name } : s)))
+  }, [pushHistory])
+
+  const handleColorChange = useCallback((id: number, color: string) => {
+    pushHistory()
+    setSubjects(prev => prev.map(s => (s.id === id ? { ...s, color } : s)))
+  }, [pushHistory])
+
+  const handleDurationChange = useCallback((id: number, delta: number) => {
+    pushHistory()
+    setSubjects(prev => prev.map(s => {
+      if (s.id === id) {
+        const newDur = Math.max(0.05, (s.duration || 0.1) + delta)
+        return { ...s, duration: parseFloat(newDur.toFixed(2)) }
+      }
+      return s
+    }))
+  }, [pushHistory])
+
+  const handleDuplicate = useCallback((id: number) => {
+    const sub = subjects.find(s => s.id === id)
+    if (!sub) return
+    pushHistory()
+    const newId = Date.now()
+    setSubjects(prev => [...prev, { ...sub, id: newId }])
+    setLastAddedId(newId)
+    window.setTimeout(() => setLastAddedId(null), 500)
+  }, [subjects, pushHistory])
 
   const handleOnboardingNext = () => {
     setOnboardingStep(prev => {
@@ -875,6 +995,18 @@ export default function Home() {
         return
       }
 
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        handleUndo()
+        return
+      }
+
+      if ((e.metaKey || e.ctrlKey) && ((e.shiftKey && e.key.toLowerCase() === 'z') || e.key.toLowerCase() === 'y')) {
+        e.preventDefault()
+        handleRedo()
+        return
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
         e.preventDefault()
         setIsExportOpen(true)
@@ -898,7 +1030,7 @@ export default function Home() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [mode, stagingMask, stagingPoints.length, encodingProgress, handleCommit, handleResetStaging])
+  }, [mode, stagingMask, stagingPoints.length, encodingProgress, handleCommit, handleResetStaging, handleUndo, handleRedo])
 
 
   // Determine Status and Color
@@ -984,33 +1116,13 @@ export default function Home() {
             subjects={subjects}
             isLocked={isTimelineLocked}
             onReorder={handleReorder}
-            onNameChange={(id, name) => {
-              setSubjects(subjects.map(s => (s.id === id ? { ...s, name } : s)))
-            }}
-            onColorChange={(id, color) => {
-              setSubjects(subjects.map(s => (s.id === id ? { ...s, color } : s)))
-            }}
+            onNameChange={handleNameChange}
+            onColorChange={handleColorChange}
             onPreviewSubject={toggleSubjectPreview}
             onFocusPreview={(id) => setFocusPreviewId(id)}
             onDelete={handleDeleteSubject}
-            onDuplicate={(id) => {
-              const sub = subjects.find(s => s.id === id)
-              if (sub) {
-                const newId = Date.now()
-                setSubjects([...subjects, { ...sub, id: newId }])
-                setLastAddedId(newId)
-                window.setTimeout(() => setLastAddedId(null), 500)
-              }
-            }}
-            onDurationChange={(id, delta) => {
-              setSubjects(subjects.map(s => {
-                 if (s.id === id) {
-                   const newDur = Math.max(0.05, (s.duration || 0.1) + delta)
-                   return { ...s, duration: parseFloat(newDur.toFixed(2)) }
-                 }
-                 return s
-              }))
-            }}
+            onDuplicate={handleDuplicate}
+            onDurationChange={handleDurationChange}
             currentPlayingIndex={currentPlayingIndex}
             newlyAddedId={lastAddedId}
             deleteEffectId={deleteEffectId}
