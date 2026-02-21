@@ -34,6 +34,7 @@ UPLOAD -> SELECT -> EXPORT
 |-------|------------|
 | Framework | Next.js 14 + React 18 |
 | ML Model | Transformers.js + SAM (slimsam-77-uniform) |
+| 3D/WebGL | Three.js + React Three Fiber + @react-three/postprocessing |
 | Styling | CSS Modules |
 | Architecture | Browser-local + Web Worker |
 
@@ -41,10 +42,12 @@ UPLOAD -> SELECT -> EXPORT
 
 | Path | Purpose |
 |------|---------|
-| `app/page.tsx` | Main page, state management, mask algorithm |
+| `app/[locale]/page.tsx` | Effect Hub homepage with animated route cards |
+| `app/[locale]/flash-photo/page.tsx` | Flash Photo - power-on effect generator |
+| `app/[locale]/lidar/page.tsx` | LiDAR point cloud visualization |
+| `components/ui/Dither.tsx` | WebGL-powered dither effect component |
 | `hooks/useSAM.ts` | SAM model wrapper |
-| `components/Header.tsx` | Top navigation |
-| `components/Footer.tsx` | Bottom status bar |
+| `hooks/useSharedUpload.ts` | Shared upload flow across routes |
 
 ## Design Guidelines\
 
@@ -64,3 +67,5 @@ UPLOAD -> SELECT -> EXPORT
 - [x] the ux needs major redesign (upload state power-on pass 1)
 - [x] further ux polish (select + export screens)
 - [x] homepage upgraded into effect hub with reusable shared upload across flash-photo and lidar routes
+- [x] liDAR point cloud visualization with 3D rendering
+- [x] dither effect migrated to WebGL
