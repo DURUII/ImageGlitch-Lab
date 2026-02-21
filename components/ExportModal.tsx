@@ -7,6 +7,14 @@ interface ExportModalProps {
   isOpen: boolean
   formats: ExportFormat[]
   cutoutModes: CutoutMode[]
+  availableFormats?: ExportFormat[]
+  formatLabels?: Partial<Record<ExportFormat, string>>
+  optionGroup?: {
+    title: string
+    options: Array<{ id: string; label: string }>
+    selected: string[]
+    onToggle: (id: string) => void
+  }
   onFormatToggle: (format: ExportFormat) => void
   onCutoutModeToggle: (mode: CutoutMode) => void
   onCancel: () => void
@@ -20,6 +28,9 @@ export default function ExportModal({
   isOpen,
   formats,
   cutoutModes,
+  availableFormats,
+  formatLabels,
+  optionGroup,
   onFormatToggle,
   onCutoutModeToggle,
   onCancel,
@@ -29,6 +40,15 @@ export default function ExportModal({
   progress = 0
 }: ExportModalProps) {
   if (!isOpen) return null
+
+  const formatOptions = availableFormats ?? (['mp4', 'gif', 'live', 'cutout'] as ExportFormat[])
+  const getFormatLabel = (opt: ExportFormat) => {
+    if (formatLabels?.[opt]) return formatLabels[opt]
+    if (opt === 'mp4') return 'MP4'
+    if (opt === 'gif') return 'GIF'
+    if (opt === 'live') return 'LIVE PHOTO'
+    return 'CUTOUT'
+  }
 
   return (
     <div className={styles.backdrop} role="dialog" aria-modal="true">
@@ -40,7 +60,7 @@ export default function ExportModal({
         <div className={styles.section}>
           <div className={styles.sectionTitle}>FORMAT</div>
           <div className={styles.optionRow}>
-            {(['mp4', 'gif', 'live', 'cutout'] as ExportFormat[]).map(opt => (
+            {formatOptions.map(opt => (
               <button
                 key={opt}
                 type="button"
@@ -48,14 +68,30 @@ export default function ExportModal({
                 onClick={() => onFormatToggle(opt)}
                 disabled={isBusy}
               >
-                {opt === 'mp4' && 'MP4'}
-                {opt === 'gif' && 'GIF'}
-                {opt === 'live' && 'LIVE PHOTO'}
-                {opt === 'cutout' && 'CUTOUT'}
+                {getFormatLabel(opt)}
               </button>
             ))}
           </div>
         </div>
+
+        {optionGroup && (
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>{optionGroup.title}</div>
+            <div className={styles.optionRow}>
+              {optionGroup.options.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  className={`${styles.optionButton} ${optionGroup.selected.includes(opt.id) ? styles.active : ''}`}
+                  onClick={() => optionGroup.onToggle(opt.id)}
+                  disabled={isBusy}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {formats.includes('cutout') && (
           <div className={styles.section}>

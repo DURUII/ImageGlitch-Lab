@@ -7,6 +7,8 @@ interface TopBarProps {
   status?: string
   statusColor?: string
   homeHref?: string
+  helpLabel?: string
+  exportLabel?: string
 }
 
 export default function TopBar({
@@ -16,6 +18,8 @@ export default function TopBar({
   status,
   statusColor = '#FFFFFF',
   homeHref = '/',
+  helpLabel = 'Help',
+  exportLabel = 'Export',
 }: TopBarProps) {
   return (
     <header className={styles.topBar}>
@@ -46,9 +50,9 @@ export default function TopBar({
 
       {showActions && (
         <div className={styles.right}>
-          <button className={styles.actionButton} onClick={onHelp}>Help</button>
+          <button className={styles.actionButton} onClick={onHelp}>{helpLabel}</button>
           <button className={`${styles.actionButton} ${styles.exportButton}`} onClick={onExport}>
-            Export
+            {exportLabel}
           </button>
         </div>
       )}

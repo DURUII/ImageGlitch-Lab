@@ -1,24 +1,13 @@
 'use client'
 
-import { useRef } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
 import TopBar from '@/components/TopBar'
 import Footer from '@/components/Footer'
 import Dither from '@/components/ui/Dither'
+import AnimatedShinyText from '@/components/ui/AnimatedShinyText'
 import WordRotate from '@/components/ui/WordRotate'
-import { useSharedUpload } from '@/hooks/useSharedUpload'
 import styles from './home.module.css'
 
 export default function HomePage({ params }: { params: { locale: string } }) {
-  const { sharedImage } = useSharedUpload()
-  const parallaxRef = useRef<HTMLElement | null>(null)
-  const { scrollYProgress } = useScroll({
-    target: parallaxRef,
-    offset: ['start end', 'end start'],
-  })
-  const rearLayerY = useTransform(scrollYProgress, [0, 1], ['-8%', '10%'])
-  const frontLayerY = useTransform(scrollYProgress, [0, 1], ['-18%', '20%'])
-
   return (
     <main className={styles.main}>
       <section className={styles.heroScreen}>
@@ -39,60 +28,48 @@ export default function HomePage({ params }: { params: { locale: string } }) {
           </div>
 
           <div className={styles.heroContent}>
+            <div className={styles.heroCopy}>
+              <span className={styles.heroEyebrow}>EFFECT HUB</span>
 
-            <h1 className={styles.heroTitle}>
-              MAKE VIRAL
-              <WordRotate
-                words={['FLASH PHOTO', 'LIDAR LOOKS', 'GLITCH CUTOUTS']}
-                duration={2100}
-                className={styles.heroRotateWord}
-              />
-            </h1>
+              <h1 className={styles.heroTitle}>
+                MAKE VIRAL
+                <WordRotate
+                  words={['FLASH PHOTO', 'LIDAR SCANS', 'GLITCH CUTOUTS']}
+                  duration={2100}
+                  className={styles.heroRotateWord}
+                />
+              </h1>
 
-            <p className={styles.heroSub}>
-              PICK AN EFFECT, DROP A PHOTO, SHIP SHORT-FORM VISUALS FAST WITHIN SECONDS.
-            </p>
+              <AnimatedShinyText className={styles.heroSub}>
+                PICK AN EFFECT, DROP A PHOTO, THEN SHIP SHORT-FORM VISUALS IN SECONDS.
+              </AnimatedShinyText>
+            </div>
 
-            <a href="#effects" className={styles.scrollCue}>
-              SCROLL FOR EFFECTS
-            </a>
+            <div className={styles.routePanel}>
+              <div className={styles.routePanelHead}>
+                <span className={styles.panelLabel}>SELECT RENDER MODE</span>
+                <span className={styles.panelStatus}>100% LOCAL PROCESSING</span>
+              </div>
+
+              <div className={styles.routeGrid}>
+                <a className={styles.routeCard} href={`/${params.locale}/flash-photo`}>
+                  <span className={styles.routeMeta}>MASK + RHYTHM</span>
+                  <span className={styles.routeName}>FLASH PHOTO</span>
+                  <span className={styles.routeDesc}>SEQUENCE SUBJECTS. APPLY GLITCH PRESETS. EXPORT MP4 OR GIF.</span>
+                  <span className={styles.routeAction}>OPEN WORKSPACE</span>
+                </a>
+                <a className={styles.routeCard} href={`/${params.locale}/lidar`}>
+                  <span className={styles.routeMeta}>DEPTH + LAYERS</span>
+                  <span className={styles.routeName}>LIDAR SCAN</span>
+                  <span className={styles.routeDesc}>RECONSTRUCT DEPTH MAPS, STACK FLICKER LAYERS, AND RENDER.</span>
+                  <span className={styles.routeAction}>OPEN WORKSPACE</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
         <Footer modelReady modelStatus="ready" modelProgress={1} />
-      </section>
-
-      <section id="effects" ref={parallaxRef} className={styles.parallaxScreen}>
-        <motion.div
-          aria-hidden="true"
-          className={`${styles.parallaxLayer} ${styles.parallaxLayerRear}`}
-          style={{ y: rearLayerY }}
-        />
-        <motion.div
-          aria-hidden="true"
-          className={`${styles.parallaxLayer} ${styles.parallaxLayerFront}`}
-          style={{ y: frontLayerY }}
-        />
-
-        <div className={styles.parallaxContent}>
-          <span className={styles.parallaxLead}>EFFECT STACK</span>
-          <h2 className={styles.parallaxTitle}>CHOOSE YOUR NEXT PAGE</h2>
-          <p className={styles.parallaxSub}>
-            FLASH PHOTO IS FOR RHYTHM POWER-ON CUTOUTS. LIDAR IS FOR DEPTH-LOOK VISUALS WITH THE SAME
-            SHARED SOURCE.
-          </p>
-
-          <div className={styles.routeGrid}>
-            <a className={styles.routeCard} href={`/${params.locale}/flash-photo`}>
-              <span className={styles.routeName}>FLASH PHOTO</span>
-              <span className={styles.routeDesc}>MASK SEQUENCE, GLITCH PRESETS, EXPORT</span>
-            </a>
-            <a className={styles.routeCard} href={`/${params.locale}/lidar`}>
-              <span className={styles.routeName}>LIDAR LOOK</span>
-              <span className={styles.routeDesc}>DEPTH RECONSTRUCTION, LAYERED FLICKER</span>
-            </a>
-          </div>
-        </div>
       </section>
     </main>
   )
