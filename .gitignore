@@ -56,3 +56,7 @@ sketch
 # End of https://www.toptal.com/developers/gitignore/api/nextjs,react,web
 
 **/.claude/
+**/.agents/
+**/tmp/
+
+playground.txt

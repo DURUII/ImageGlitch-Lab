@@ -1,0 +1,3537 @@
+---
+title: Installation
+description: How to install dependencies and structure your app.
+date: 2024-09-16
+---
+
+<Callout>
+
+**Note:** We have the exact same installation process as [shadcn/ui](https://ui.shadcn.com/docs/installation/).
+
+</Callout>
+
+<Steps>
+
+### Create project
+
+Run the `init` command to create a new Next.js project or to setup an existing one:
+
+```bash
+npx shadcn@latest init
+```
+
+### Add components
+
+You can now start adding components to your project.
+
+```bash
+npx shadcn@latest add @magicui/globe
+```
+
+### Import component
+
+The command above will add the `Globe` component to your project. You can then import it like this:
+
+```tsx {1,6} showLineNumbers
+import { Globe } from "@/components/ui/globe"
+
+export default function Home() {
+  return <Globe />
+}
+```
+
+</Steps>
+
+---
+title: Marquee
+date: 2023-07-26
+description: An infinite scrolling component that can be used to display text, images, or videos.
+author: dillionverma
+published: true
+video: https://cdn.magicui.design/marquee.mp4
+---
+
+<ComponentPreview name="marquee-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/marquee
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+import { ComponentPropsWithoutRef } from "react"
+
+import { cn } from "@/lib/utils"
+
+interface MarqueeProps extends ComponentPropsWithoutRef<"div"> {
+  /**
+   * Optional CSS class name to apply custom styles
+   */
+  className?: string
+  /**
+   * Whether to reverse the animation direction
+   * @default false
+   */
+  reverse?: boolean
+  /**
+   * Whether to pause the animation on hover
+   * @default false
+   */
+  pauseOnHover?: boolean
+  /**
+   * Content to be displayed in the marquee
+   */
+  children: React.ReactNode
+  /**
+   * Whether to animate vertically instead of horizontally
+   * @default false
+   */
+  vertical?: boolean
+  /**
+   * Number of times to repeat the content
+   * @default 4
+   */
+  repeat?: number
+}
+
+export function Marquee({
+  className,
+  reverse = false,
+  pauseOnHover = false,
+  children,
+  vertical = false,
+  repeat = 4,
+  ...props
+}: MarqueeProps) {
+  return (
+    <div
+      {...props}
+      className={cn(
+        "group flex [gap:var(--gap)] overflow-hidden p-2 [--duration:40s] [--gap:1rem]",
+        {
+          "flex-row": !vertical,
+          "flex-col": vertical,
+        },
+        className
+      )}
+    >
+      {Array(repeat)
+        .fill(0)
+        .map((_, i) => (
+          <div
+            key={i}
+            className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
+              "animate-marquee flex-row": !vertical,
+              "animate-marquee-vertical flex-col": vertical,
+              "group-hover:[animation-play-state:paused]": pauseOnHover,
+              "[animation-direction:reverse]": reverse,
+            })}
+          >
+            {children}
+          </div>
+        ))}
+    </div>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+<Step>Add the required CSS animations</Step>
+
+Add the following animations to your global CSS file.
+
+```css title="app/globals.css" showLineNumbers {2-3, 4-20}
+@theme inline {
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+}
+```
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Examples
+
+### Vertical
+
+<ComponentPreview name="marquee-demo-vertical" />
+
+### 3D
+
+<ComponentPreview name="marquee-3d" />
+
+## Usage
+
+```tsx showLineNumbers
+import { Marquee } from "@/components/ui/marquee"
+```
+
+```tsx showLineNumbers
+<Marquee>
+  <span>Next.js</span>
+  <span>React</span>
+  <span>TypeScript</span>
+  <span>Tailwind CSS</span>
+</Marquee>
+```
+
+## Props
+
+| Prop           | Type      | Default | Description                                                                  |
+| -------------- | --------- | ------- | ---------------------------------------------------------------------------- |
+| `className`    | `string`  | `-`     | The class name to apply to the component.                                    |
+| `reverse`      | `boolean` | `false` | Whether or not to reverse the direction of the marquee.                      |
+| `pauseOnHover` | `boolean` | `false` | Whether or not to pause the marquee when the user hovers over the component. |
+| `vertical`     | `boolean` | `false` | Whether or not to display the marquee vertically.                            |
+| `children`     | `node`    | `-`     | The content to display in the marquee.                                       |
+| `repeat`       | `number`  | `4`     | The number of times to repeat the content.                                   |
+
+---
+title: Bento Grid
+date: 2023-11-09
+description: Bento grid is a layout used to showcase the features of a product in a simple and elegant way.
+author: dillionverma
+published: true
+---
+
+<ComponentPreview name="bento-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/bento-grid
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+import { ComponentPropsWithoutRef, ReactNode } from "react"
+import { ArrowRightIcon } from "@radix-ui/react-icons"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+
+interface BentoGridProps extends ComponentPropsWithoutRef<"div"> {
+  children: ReactNode
+  className?: string
+}
+
+interface BentoCardProps extends ComponentPropsWithoutRef<"div"> {
+  name: string
+  className: string
+  background: ReactNode
+  Icon: React.ElementType
+  description: string
+  href: string
+  cta: string
+}
+
+const BentoGrid = ({ children, className, ...props }: BentoGridProps) => {
+  return (
+    <div
+      className={cn(
+        "grid w-full auto-rows-[22rem] grid-cols-3 gap-4",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
+
+const BentoCard = ({
+  name,
+  className,
+  background,
+  Icon,
+  description,
+  href,
+  cta,
+  ...props
+}: BentoCardProps) => (
+  <div
+    key={name}
+    className={cn(
+      "group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl",
+      // light styles
+      "bg-background [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+      // dark styles
+      "dark:bg-background transform-gpu dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset] dark:[border:1px_solid_rgba(255,255,255,.1)]",
+      className
+    )}
+    {...props}
+  >
+    <div>{background}</div>
+    <div className="p-4">
+      <div className="pointer-events-none z-10 flex transform-gpu flex-col gap-1 transition-all duration-300 lg:group-hover:-translate-y-10">
+        <Icon className="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75" />
+        <h3 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300">
+          {name}
+        </h3>
+        <p className="max-w-lg text-neutral-400">{description}</p>
+      </div>
+
+      <div
+        className={cn(
+          "pointer-events-none flex w-full translate-y-0 transform-gpu flex-row items-center transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:hidden"
+        )}
+      >
+        <Button
+          variant="link"
+          asChild
+          size="sm"
+          className="pointer-events-auto p-0"
+        >
+          <a href={href}>
+            {cta}
+            <ArrowRightIcon className="ms-2 h-4 w-4 rtl:rotate-180" />
+          </a>
+        </Button>
+      </div>
+    </div>
+
+    <div
+      className={cn(
+        "pointer-events-none absolute bottom-0 hidden w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:flex"
+      )}
+    >
+      <Button
+        variant="link"
+        asChild
+        size="sm"
+        className="pointer-events-auto p-0"
+      >
+        <a href={href}>
+          {cta}
+          <ArrowRightIcon className="ms-2 h-4 w-4 rtl:rotate-180" />
+        </a>
+      </Button>
+    </div>
+
+    <div className="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03] group-hover:dark:bg-neutral-800/10" />
+  </div>
+)
+
+export { BentoCard, BentoGrid }
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Examples
+
+<ComponentPreview name="bento-demo-vertical" />
+
+## Usage
+
+```tsx showLineNumbers
+import { BentoCard, BentoGrid } from "@/components/ui/bento-grid"
+```
+
+```tsx showLineNumbers
+<BentoGrid>
+  <BentoCard />
+</BentoGrid>
+```
+
+
+---
+title: Dock
+date: 2024-04-25
+description: An implementation of the MacOS dock using react + tailwindcss + framer motion
+author: dillionverma
+published: true
+video: https://cdn.magicui.design/dock.mp4
+---
+
+<ComponentPreview name="dock-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/dock
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import React, { PropsWithChildren, useRef } from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import {
+  motion,
+  MotionValue,
+  useMotionValue,
+  useSpring,
+  useTransform,
+} from "motion/react"
+import type { MotionProps } from "motion/react"
+
+import { cn } from "@/lib/utils"
+
+export interface DockProps extends VariantProps<typeof dockVariants> {
+  className?: string
+  iconSize?: number
+  iconMagnification?: number
+  disableMagnification?: boolean
+  iconDistance?: number
+  direction?: "top" | "middle" | "bottom"
+  children: React.ReactNode
+}
+
+const DEFAULT_SIZE = 40
+const DEFAULT_MAGNIFICATION = 60
+const DEFAULT_DISTANCE = 140
+const DEFAULT_DISABLEMAGNIFICATION = false
+
+const dockVariants = cva(
+  "supports-backdrop-blur:bg-white/10 supports-backdrop-blur:dark:bg-black/10 mx-auto mt-8 flex h-[58px] w-max items-center justify-center gap-2 rounded-2xl border p-2 backdrop-blur-md"
+)
+
+const Dock = React.forwardRef<HTMLDivElement, DockProps>(
+  (
+    {
+      className,
+      children,
+      iconSize = DEFAULT_SIZE,
+      iconMagnification = DEFAULT_MAGNIFICATION,
+      disableMagnification = DEFAULT_DISABLEMAGNIFICATION,
+      iconDistance = DEFAULT_DISTANCE,
+      direction = "middle",
+      ...props
+    },
+    ref
+  ) => {
+    const mouseX = useMotionValue(Infinity)
+
+    const renderChildren = () => {
+      return React.Children.map(children, (child) => {
+        if (
+          React.isValidElement<DockIconProps>(child) &&
+          child.type === DockIcon
+        ) {
+          return React.cloneElement(child, {
+            ...child.props,
+            mouseX: mouseX,
+            size: iconSize,
+            magnification: iconMagnification,
+            disableMagnification: disableMagnification,
+            distance: iconDistance,
+          })
+        }
+        return child
+      })
+    }
+
+    return (
+      <motion.div
+        ref={ref}
+        onMouseMove={(e) => mouseX.set(e.pageX)}
+        onMouseLeave={() => mouseX.set(Infinity)}
+        {...props}
+        className={cn(dockVariants({ className }), {
+          "items-start": direction === "top",
+          "items-center": direction === "middle",
+          "items-end": direction === "bottom",
+        })}
+      >
+        {renderChildren()}
+      </motion.div>
+    )
+  }
+)
+
+Dock.displayName = "Dock"
+
+export interface DockIconProps extends Omit<
+  MotionProps & React.HTMLAttributes<HTMLDivElement>,
+  "children"
+> {
+  size?: number
+  magnification?: number
+  disableMagnification?: boolean
+  distance?: number
+  mouseX?: MotionValue<number>
+  className?: string
+  children?: React.ReactNode
+  props?: PropsWithChildren
+}
+
+const DockIcon = ({
+  size = DEFAULT_SIZE,
+  magnification = DEFAULT_MAGNIFICATION,
+  disableMagnification,
+  distance = DEFAULT_DISTANCE,
+  mouseX,
+  className,
+  children,
+  ...props
+}: DockIconProps) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const padding = Math.max(6, size * 0.2)
+  const defaultMouseX = useMotionValue(Infinity)
+
+  const distanceCalc = useTransform(mouseX ?? defaultMouseX, (val: number) => {
+    const bounds = ref.current?.getBoundingClientRect() ?? { x: 0, width: 0 }
+    return val - bounds.x - bounds.width / 2
+  })
+
+  const targetSize = disableMagnification ? size : magnification
+
+  const sizeTransform = useTransform(
+    distanceCalc,
+    [-distance, 0, distance],
+    [size, targetSize, size]
+  )
+
+  const scaleSize = useSpring(sizeTransform, {
+    mass: 0.1,
+    stiffness: 150,
+    damping: 12,
+  })
+
+  return (
+    <motion.div
+      ref={ref}
+      style={{ width: scaleSize, height: scaleSize, padding }}
+      className={cn(
+        "flex aspect-square cursor-pointer items-center justify-center rounded-full",
+        disableMagnification && "hover:bg-muted-foreground transition-colors",
+        className
+      )}
+      {...props}
+    >
+      <div>{children}</div>
+    </motion.div>
+  )
+}
+
+DockIcon.displayName = "DockIcon"
+
+export { Dock, DockIcon, dockVariants }
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Examples
+
+### Custom Direction
+
+<ComponentPreview name="dock-demo-2" />
+
+### Custom magnification
+
+<ComponentPreview name="dock-demo-3" />
+
+## Usage
+
+```tsx showLineNumbers
+import { Home, Search, Settings } from "lucide-react"
+
+import { Dock, DockIcon } from "@/components/ui/dock"
+```
+
+```tsx showLineNumbers
+<Dock>
+  <DockIcon>
+    <Home />
+  </DockIcon>
+  <DockIcon>
+    <Settings />
+  </DockIcon>
+  <DockIcon>
+    <Search />
+  </DockIcon>
+</Dock>
+```
+
+## Props
+
+### Dock
+
+| Prop                   | Type        | Default    | Description                          |
+| ---------------------- | ----------- | ---------- | ------------------------------------ |
+| `className`            | `string`    | `-`        | Custom CSS class for styling         |
+| `children`             | `ReactNode` | `-`        | Children elements                    |
+| `iconSize`             | `number`    | `40`       | Size of the icon                     |
+| `iconMagnification`    | `number`    | `60`       | Level of icon magnification          |
+| `iconDistance`         | `number`    | `140`      | Distance from cursor to magnify icon |
+| `direction`            | `string`    | `"middle"` | Direction of the dock                |
+| `disableMagnification` | `boolean`   | `false`    | Disable Magnification on hover       |
+
+### DockIcon
+
+| Prop            | Type                | Default | Description                          |
+| --------------- | ------------------- | ------- | ------------------------------------ |
+| `size`          | `number`            | `40`    | Size of the icon                     |
+| `magnification` | `number`            | `60`    | Level of icon magnification          |
+| `distance`      | `number`            | `140`   | Distance from cursor to magnify icon |
+| `mouseX`        | `any`               | `-`     | Mouse X position for magnification   |
+| `className`     | `string`            | `-`     | Custom CSS class for styling         |
+| `children`      | `React.ReactNode`   | `-`     | Children elements                    |
+| `props`         | `PropsWithChildren` | `-`     | Additional props                     |
+
+## Credits
+
+- Credits to [Build UI](https://buildui.com/recipes/magnified-dock) for this fantastic component
+- Credits to [Ritesh Bucha](https://twitter.com/bucha_ritesh) for finding and improving it
+
+
+---
+title: Lens
+date: 2025-01-13
+description: A interactive component that enables zooming into images, videos and other elements.
+author: h3rmel
+published: true
+---
+
+<ComponentPreview name="lens-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/lens
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import React, { useCallback, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion, useMotionTemplate } from "motion/react"
+
+interface Position {
+  /** The x coordinate of the lens */
+  x: number
+  /** The y coordinate of the lens */
+  y: number
+}
+
+interface LensProps {
+  /** The children of the lens */
+  children: React.ReactNode
+  /** The zoom factor of the lens */
+  zoomFactor?: number
+  /** The size of the lens */
+  lensSize?: number
+  /** The position of the lens */
+  position?: Position
+  /** The default position of the lens */
+  defaultPosition?: Position
+  /** Whether the lens is static */
+  isStatic?: boolean
+  /** The duration of the animation */
+  duration?: number
+  /** The color of the lens */
+  lensColor?: string
+  /** The aria label of the lens */
+  ariaLabel?: string
+}
+
+export function Lens({
+  children,
+  zoomFactor = 1.3,
+  lensSize = 170,
+  isStatic = false,
+  position = { x: 0, y: 0 },
+  defaultPosition,
+  duration = 0.1,
+  lensColor = "black",
+  ariaLabel = "Zoom Area",
+}: LensProps) {
+  if (zoomFactor < 1) {
+    throw new Error("zoomFactor must be greater than 1")
+  }
+  if (lensSize < 0) {
+    throw new Error("lensSize must be greater than 0")
+  }
+
+  const [isHovering, setIsHovering] = useState(false)
+  const [mousePosition, setMousePosition] = useState<Position>(position)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const currentPosition = useMemo(() => {
+    if (isStatic) return position
+    if (defaultPosition && !isHovering) return defaultPosition
+    return mousePosition
+  }, [isStatic, position, defaultPosition, isHovering, mousePosition])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    })
+  }, [])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") setIsHovering(false)
+  }, [])
+
+  const maskImage = useMotionTemplate`radial-gradient(circle ${
+    lensSize / 2
+  }px at ${currentPosition.x}px ${
+    currentPosition.y
+  }px, ${lensColor} 100%, transparent 100%)`
+
+  const LensContent = useMemo(() => {
+    const { x, y } = currentPosition
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.58 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        transition={{ duration }}
+        className="absolute inset-0 overflow-hidden"
+        style={{
+          maskImage,
+          WebkitMaskImage: maskImage,
+          transformOrigin: `${x}px ${y}px`,
+          zIndex: 50,
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            transform: `scale(${zoomFactor})`,
+            transformOrigin: `${x}px ${y}px`,
+          }}
+        >
+          {children}
+        </div>
+      </motion.div>
+    )
+  }, [currentPosition, lensSize, lensColor, zoomFactor, children, duration])
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative z-20 overflow-hidden rounded-xl"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+      onMouseMove={handleMouseMove}
+      onKeyDown={handleKeyDown}
+      role="region"
+      aria-label={ariaLabel}
+      tabIndex={0}
+    >
+      {children}
+      {isStatic || defaultPosition ? (
+        LensContent
+      ) : (
+        <AnimatePresence mode="popLayout">
+          {isHovering && LensContent}
+        </AnimatePresence>
+      )}
+    </div>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Examples
+
+### Static Lens
+
+<ComponentPreview name="lens-demo-2" />
+
+### Lens with a Default Position
+
+<ComponentPreview name="lens-demo-3" />
+
+## Usage
+
+```tsx showLineNumbers
+import { Lens } from "@/components/ui/lens"
+```
+
+```tsx showLineNumbers
+<Lens>
+  <img src="/images/lens-demo.jpg" alt="Lens Demo" />
+</Lens>
+```
+
+## Props
+
+| Property          | Type              | Default | Description                                                |
+| ----------------- | ----------------- | ------- | ---------------------------------------------------------- |
+| `children`        | `React.ReactNode` | -       | The content that will be magnified by the lens             |
+| `zoomFactor`      | `number`          | 1.3     | The magnification factor of the lens                       |
+| `lensSize`        | `number`          | 170     | The size of the lens in pixels (works as a diameter)       |
+| `position`        | `Position`        | -       | The current position of the lens                           |
+| `defaultPosition` | `Position`        | -       | The initial position of the lens                           |
+| `isStatic`        | `boolean`         | false   | Determines if the lens will remain in a fixed position     |
+| `duration`        | `number`          | 0.1     | Duration of the animation when the lens moves (in seconds) |
+| `lensColor`       | `string`          | -       | The color of the lens (CSS color value)                    |
+| `ariaLabel`       | `string`          | -       | Accessibility label for the lens component                 |
+
+---
+title: Smooth Cursor
+date: 2024-04-17
+description: A customizable, physics-based smooth cursor animation component for React applications.
+author: magicui
+published: true
+---
+
+<ComponentPreview name="smooth-cursor-demo" />
+
+## Features
+
+- 🎯 Smooth physics-based cursor animations
+- 🔄 Rotation effects based on movement direction
+- ⚡ Performance optimized with RAF
+- 🎨 Fully customizable cursor design
+- 📦 Lightweight and easy to implement
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/smooth-cursor
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import { FC, useEffect, useRef, useState } from "react"
+import { motion, useSpring } from "motion/react"
+
+interface Position {
+  x: number
+  y: number
+}
+
+export interface SmoothCursorProps {
+  cursor?: React.ReactNode
+  springConfig?: {
+    damping: number
+    stiffness: number
+    mass: number
+    restDelta: number
+  }
+}
+
+const DefaultCursorSVG: FC = () => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={50}
+      height={54}
+      viewBox="0 0 50 54"
+      fill="none"
+      style={{ scale: 0.5 }}
+    >
+      <g filter="url(#filter0_d_91_7928)">
+        <path
+          d="M42.6817 41.1495L27.5103 6.79925C26.7269 5.02557 24.2082 5.02558 23.3927 6.79925L7.59814 41.1495C6.75833 42.9759 8.52712 44.8902 10.4125 44.1954L24.3757 39.0496C24.8829 38.8627 25.4385 38.8627 25.9422 39.0496L39.8121 44.1954C41.6849 44.8902 43.4884 42.9759 42.6817 41.1495Z"
+          fill="black"
+        />
+        <path
+          d="M43.7146 40.6933L28.5431 6.34306C27.3556 3.65428 23.5772 3.69516 22.3668 6.32755L6.57226 40.6778C5.3134 43.4156 7.97238 46.298 10.803 45.2549L24.7662 40.109C25.0221 40.0147 25.2999 40.0156 25.5494 40.1082L39.4193 45.254C42.2261 46.2953 44.9254 43.4347 43.7146 40.6933Z"
+          stroke="white"
+          strokeWidth={2.25825}
+        />
+      </g>
+      <defs>
+        <filter
+          id="filter0_d_91_7928"
+          x={0.602397}
+          y={0.952444}
+          width={49.0584}
+          height={52.428}
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity={0} result="BackgroundImageFix" />
+          <feColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <feOffset dy={2.25825} />
+          <feGaussianBlur stdDeviation={2.25825} />
+          <feComposite in2="hardAlpha" operator="out" />
+          <feColorMatrix
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0"
+          />
+          <feBlend
+            mode="normal"
+            in2="BackgroundImageFix"
+            result="effect1_dropShadow_91_7928"
+          />
+          <feBlend
+            mode="normal"
+            in="SourceGraphic"
+            in2="effect1_dropShadow_91_7928"
+            result="shape"
+          />
+        </filter>
+      </defs>
+    </svg>
+  )
+}
+
+export function SmoothCursor({
+  cursor = <DefaultCursorSVG />,
+  springConfig = {
+    damping: 45,
+    stiffness: 400,
+    mass: 1,
+    restDelta: 0.001,
+  },
+}: SmoothCursorProps) {
+  const [isMoving, setIsMoving] = useState(false)
+  const lastMousePos = useRef<Position>({ x: 0, y: 0 })
+  const velocity = useRef<Position>({ x: 0, y: 0 })
+  const lastUpdateTime = useRef(Date.now())
+  const previousAngle = useRef(0)
+  const accumulatedRotation = useRef(0)
+
+  const cursorX = useSpring(0, springConfig)
+  const cursorY = useSpring(0, springConfig)
+  const rotation = useSpring(0, {
+    ...springConfig,
+    damping: 60,
+    stiffness: 300,
+  })
+  const scale = useSpring(1, {
+    ...springConfig,
+    stiffness: 500,
+    damping: 35,
+  })
+
+  useEffect(() => {
+    const updateVelocity = (currentPos: Position) => {
+      const currentTime = Date.now()
+      const deltaTime = currentTime - lastUpdateTime.current
+
+      if (deltaTime > 0) {
+        velocity.current = {
+          x: (currentPos.x - lastMousePos.current.x) / deltaTime,
+          y: (currentPos.y - lastMousePos.current.y) / deltaTime,
+        }
+      }
+
+      lastUpdateTime.current = currentTime
+      lastMousePos.current = currentPos
+    }
+
+    const smoothMouseMove = (e: MouseEvent) => {
+      const currentPos = { x: e.clientX, y: e.clientY }
+      updateVelocity(currentPos)
+
+      const speed = Math.sqrt(
+        Math.pow(velocity.current.x, 2) + Math.pow(velocity.current.y, 2)
+      )
+
+      cursorX.set(currentPos.x)
+      cursorY.set(currentPos.y)
+
+      if (speed > 0.1) {
+        const currentAngle =
+          Math.atan2(velocity.current.y, velocity.current.x) * (180 / Math.PI) +
+          90
+
+        let angleDiff = currentAngle - previousAngle.current
+        if (angleDiff > 180) angleDiff -= 360
+        if (angleDiff < -180) angleDiff += 360
+        accumulatedRotation.current += angleDiff
+        rotation.set(accumulatedRotation.current)
+        previousAngle.current = currentAngle
+
+        scale.set(0.95)
+        setIsMoving(true)
+
+        const timeout = setTimeout(() => {
+          scale.set(1)
+          setIsMoving(false)
+        }, 150)
+
+        return () => clearTimeout(timeout)
+      }
+    }
+
+    let rafId: number
+    const throttledMouseMove = (e: MouseEvent) => {
+      if (rafId) return
+
+      rafId = requestAnimationFrame(() => {
+        smoothMouseMove(e)
+        rafId = 0
+      })
+    }
+
+    document.body.style.cursor = "none"
+    window.addEventListener("mousemove", throttledMouseMove)
+
+    return () => {
+      window.removeEventListener("mousemove", throttledMouseMove)
+      document.body.style.cursor = "auto"
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [cursorX, cursorY, rotation, scale])
+
+  return (
+    <motion.div
+      style={{
+        position: "fixed",
+        left: cursorX,
+        top: cursorY,
+        translateX: "-50%",
+        translateY: "-50%",
+        rotate: rotation,
+        scale: scale,
+        zIndex: 100,
+        pointerEvents: "none",
+        willChange: "transform",
+      }}
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 30,
+      }}
+    >
+      {cursor}
+    </motion.div>
+  )
+}
+
+```
+
+<Step>Add the component to your page or layout.</Step>
+
+```tsx showLineNumbers
+import { SmoothCursor } from "@/components/ui/smooth-cursor"
+
+export default function Page() {
+  return (
+    <>
+      <SmoothCursor />
+      {/* Your page content */}
+    </>
+  )
+}
+```
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { SmoothCursor } from "@/components/ui/smooth-cursor"
+```
+
+```tsx showLineNumbers
+<SmoothCursor />
+```
+
+## Hiding Default Browser Cursor
+
+To prevent the default browser cursor from overlapping with the custom cursor, add the following CSS globally:
+
+```css showLineNumbers
+* {
+  cursor: none !important;
+}
+```
+
+### Optional: Keep text cursor for inputs
+
+```css showLineNumbers
+input,
+textarea,
+select {
+  cursor: text !important;
+}
+```
+
+💡 If you're using Tailwind CSS, you can add cursor-none to your layout wrapper:
+
+```tsx showLineNumbers
+<div className="cursor-none">
+  <SmoothCursor />
+  {/* your app */}
+</div>
+```
+
+## Props
+
+| Prop           | Type              | Default                | Description                                            |
+| -------------- | ----------------- | ---------------------- | ------------------------------------------------------ |
+| `cursor`       | `React.ReactNode` | `<DefaultCursorSVG />` | Custom cursor component to replace the default cursor  |
+| `springConfig` | `SpringConfig`    | See below              | Configuration object for the spring animation behavior |
+
+### SpringConfig Type
+
+```typescript showLineNumbers
+interface SpringConfig {
+  damping: number // Controls how quickly the animation settles
+  stiffness: number // Controls the spring stiffness
+  mass: number // Controls the virtual mass of the animated object
+  restDelta: number // Controls the threshold at which animation is considered complete
+}
+```
+
+### Default Spring Configuration
+
+```typescript showLineNumbers
+const defaultSpringConfig = {
+  damping: 45,
+  stiffness: 400,
+  mass: 1,
+  restDelta: 0.001,
+}
+```
+
+## Browser Support
+
+Compatible with all modern browsers that support:
+
+- `requestAnimationFrame`
+- CSS transforms
+- Pointer events
+
+## Accessibility
+
+When using this component, consider that:
+
+- Users navigating via keyboard will not see the custom cursor
+- You may want to provide alternative visual cues for interactive elements
+- Some users may have motion sensitivity, so consider providing a way to disable the animation
+
+## Credits
+
+- Credit to [@Code_Parth](https://twitter.com/Code_Parth) for the original concept and implementation
+
+
+---
+title: Shine Border
+date: 2024-05-25
+description: Shine border is an animated background border effect.
+author: unnamed-lab
+published: true
+---
+
+<ComponentPreview name="shine-border-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/shine-border
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+interface ShineBorderProps extends React.HTMLAttributes<HTMLDivElement> {
+  /**
+   * Width of the border in pixels
+   * @default 1
+   */
+  borderWidth?: number
+  /**
+   * Duration of the animation in seconds
+   * @default 14
+   */
+  duration?: number
+  /**
+   * Color of the border, can be a single color or an array of colors
+   * @default "#000000"
+   */
+  shineColor?: string | string[]
+}
+
+/**
+ * Shine Border
+ *
+ * An animated background border effect component with configurable properties.
+ */
+export function ShineBorder({
+  borderWidth = 1,
+  duration = 14,
+  shineColor = "#000000",
+  className,
+  style,
+  ...props
+}: ShineBorderProps) {
+  return (
+    <div
+      style={
+        {
+          "--border-width": `${borderWidth}px`,
+          "--duration": `${duration}s`,
+          backgroundImage: `radial-gradient(transparent,transparent, ${
+            Array.isArray(shineColor) ? shineColor.join(",") : shineColor
+          },transparent,transparent)`,
+          backgroundSize: "300% 300%",
+          mask: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+          WebkitMask: `linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)`,
+          WebkitMaskComposite: "xor",
+          maskComposite: "exclude",
+          padding: "var(--border-width)",
+          ...style,
+        } as React.CSSProperties
+      }
+      className={cn(
+        "motion-safe:animate-shine pointer-events-none absolute inset-0 size-full rounded-[inherit] will-change-[background-position]",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+<Step>Add the required CSS animations</Step>
+
+Add the following animations to your global CSS file.
+
+```css title="app/globals.css" showLineNumbers {2, 4-14}
+@theme inline {
+  --animate-shine: shine var(--duration) infinite linear;
+
+  @keyframes shine {
+    0% {
+      background-position: 0% 0%;
+    }
+    50% {
+      background-position: 100% 100%;
+    }
+    to {
+      background-position: 0% 0%;
+    }
+  }
+}
+```
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Examples
+
+### Monotone
+
+<ComponentPreview name="shine-border-demo-2" />
+
+## Usage
+
+```tsx showLineNumbers
+import { ShineBorder } from "@/registry/magicui/shine-border"
+```
+
+```tsx showLineNumbers
+<div className="relative h-[500px] w-full overflow-hidden">
+  <ShineBorder />
+</div>
+```
+
+## Props
+
+| Prop          | Type                  | Default     | Description                                                         |
+| ------------- | --------------------- | ----------- | ------------------------------------------------------------------- |
+| `className`   | `string`              | `-`         | The class name to be applied to the component.                      |
+| `duration`    | `number`              | `14`        | Defines the animation duration to be applied on the shining border. |
+| `shineColor`  | `string \| string[]`  | `"#000000"` | Color of the border, can be a single color or an array of colors.   |
+| `borderWidth` | `number`              | `1`         | Width of the border in pixels.                                      |
+| `style`       | `React.CSSProperties` | `-`         | Additional styles to be applied to the component.                   |
+
+---
+title: Theme Toggler
+date: 2025-08-17
+description: An Animated theme toggler component, fully customizable using Tailwind CSS.
+author: Nazam Kalsi
+published: true
+---
+
+<ComponentPreview name="animated-theme-toggler-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/animated-theme-toggler
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Moon, Sun } from "lucide-react"
+import { flushSync } from "react-dom"
+
+import { cn } from "@/lib/utils"
+
+interface AnimatedThemeTogglerProps extends React.ComponentPropsWithoutRef<"button"> {
+  duration?: number
+}
+
+export const AnimatedThemeToggler = ({
+  className,
+  duration = 400,
+  ...props
+}: AnimatedThemeTogglerProps) => {
+  const [isDark, setIsDark] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    const updateTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"))
+    }
+
+    updateTheme()
+
+    const observer = new MutationObserver(updateTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  const toggleTheme = useCallback(async () => {
+    if (!buttonRef.current) return
+
+    await document.startViewTransition(() => {
+      flushSync(() => {
+        const newTheme = !isDark
+        setIsDark(newTheme)
+        document.documentElement.classList.toggle("dark")
+        localStorage.setItem("theme", newTheme ? "dark" : "light")
+      })
+    }).ready
+
+    const { top, left, width, height } =
+      buttonRef.current.getBoundingClientRect()
+    const x = left + width / 2
+    const y = top + height / 2
+    const maxRadius = Math.hypot(
+      Math.max(left, window.innerWidth - left),
+      Math.max(top, window.innerHeight - top)
+    )
+
+    document.documentElement.animate(
+      {
+        clipPath: [
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${maxRadius}px at ${x}px ${y}px)`,
+        ],
+      },
+      {
+        duration,
+        easing: "ease-in-out",
+        pseudoElement: "::view-transition-new(root)",
+      }
+    )
+  }, [isDark, duration])
+
+  return (
+    <button
+      ref={buttonRef}
+      onClick={toggleTheme}
+      className={cn(className)}
+      {...props}
+    >
+      {isDark ? <Sun /> : <Moon />}
+      <span className="sr-only">Toggle theme</span>
+    </button>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+<Step>Add the required CSS into your global CSS file</Step>
+
+```css title="app/globals.css" showLineNumbers
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+```
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
+```
+
+```tsx showLineNumbers
+<AnimatedThemeToggler />
+```
+
+## Props
+
+| Prop        | Type     | Default | Description                                                |
+| ----------- | -------- | ------- | ---------------------------------------------------------- |
+| `className` | `String` | " "     | Additional classes to be added to the component            |
+| `duration`  | `Number` | `400`   | Duration of the theme transition animation in milliseconds |
+
+## Credits
+
+- Credit to [Nazam Kalsi](https://nazam-kalsi-portfolio.vercel.app)
+
+
+---
+title: Animated Shiny Text
+date: 2024-01-16
+description: A light glare effect which pans across text making it appear as if it is shimmering.
+author: dillionverma
+published: true
+video: https://cdn.magicui.design/animated-shiny-text.mp4
+---
+
+<ComponentPreview name="animated-shiny-text-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/animated-shiny-text
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+import { ComponentPropsWithoutRef, CSSProperties, FC } from "react"
+
+import { cn } from "@/lib/utils"
+
+export interface AnimatedShinyTextProps extends ComponentPropsWithoutRef<"span"> {
+  shimmerWidth?: number
+}
+
+export const AnimatedShinyText: FC<AnimatedShinyTextProps> = ({
+  children,
+  className,
+  shimmerWidth = 100,
+  ...props
+}) => {
+  return (
+    <span
+      style={
+        {
+          "--shiny-width": `${shimmerWidth}px`,
+        } as CSSProperties
+      }
+      className={cn(
+        "mx-auto max-w-md text-neutral-600/70 dark:text-neutral-400/70",
+
+        // Shine effect
+        "animate-shiny-text [background-size:var(--shiny-width)_100%] bg-clip-text [background-position:0_0] bg-no-repeat [transition:background-position_1s_cubic-bezier(.6,.6,0,1)_infinite]",
+
+        // Shine gradient
+        "bg-gradient-to-r from-transparent via-black/80 via-50% to-transparent dark:via-white/80",
+
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </span>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+<Step>Add the required CSS animations</Step>
+
+Add the following animations to your global CSS file.
+
+```css title="app/globals.css" showLineNumbers {2, 4-14}
+@theme inline {
+  --animate-shiny-text: shiny-text 8s infinite;
+
+  @keyframes shiny-text {
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+}
+```
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { AnimatedShinyText } from "@/components/ui/animated-shiny-text"
+```
+
+```tsx showLineNumbers
+<AnimatedShinyText>Hello</AnimatedShinyText>
+```
+
+## Props
+
+| Prop           | Type     | Default | Description                                  |
+| -------------- | -------- | ------- | -------------------------------------------- |
+| `children`     | `node`   | `-`     | The text to be shimmered.                    |
+| `className`    | `string` | `-`     | The class name to be applied to the shimmer. |
+| `shimmerWidth` | `number` | `100`   | The width of the shimmer in pixels.          |
+
+
+---
+title: Text Reveal
+date: 2024-04-08
+description: Fade in text as you scroll down the page.
+author: dillionverma
+published: true
+video: https://cdn.magicui.design/text-reveal.mp4
+---
+
+<ComponentPreview name="text-reveal-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/text-reveal
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import { ComponentPropsWithoutRef, FC, ReactNode, useRef } from "react"
+import { motion, MotionValue, useScroll, useTransform } from "motion/react"
+
+import { cn } from "@/lib/utils"
+
+export interface TextRevealProps extends ComponentPropsWithoutRef<"div"> {
+  children: string
+}
+
+export const TextReveal: FC<TextRevealProps> = ({ children, className }) => {
+  const targetRef = useRef<HTMLDivElement | null>(null)
+  const { scrollYProgress } = useScroll({
+    target: targetRef,
+  })
+
+  if (typeof children !== "string") {
+    throw new Error("TextReveal: children must be a string")
+  }
+
+  const words = children.split(" ")
+
+  return (
+    <div ref={targetRef} className={cn("relative z-0 h-[200vh]", className)}>
+      <div
+        className={
+          "sticky top-0 mx-auto flex h-[50%] max-w-4xl items-center bg-transparent px-[1rem] py-[5rem]"
+        }
+      >
+        <span
+          ref={targetRef}
+          className={
+            "flex flex-wrap p-5 text-2xl font-bold text-black/20 md:p-8 md:text-3xl lg:p-10 lg:text-4xl xl:text-5xl dark:text-white/20"
+          }
+        >
+          {words.map((word, i) => {
+            const start = i / words.length
+            const end = start + 1 / words.length
+            return (
+              <Word key={i} progress={scrollYProgress} range={[start, end]}>
+                {word}
+              </Word>
+            )
+          })}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+interface WordProps {
+  children: ReactNode
+  progress: MotionValue<number>
+  range: [number, number]
+}
+
+const Word: FC<WordProps> = ({ children, progress, range }) => {
+  const opacity = useTransform(progress, range, [0, 1])
+  return (
+    <span className="xl:lg-3 relative mx-1 lg:mx-1.5">
+      <span className="absolute opacity-30">{children}</span>
+      <motion.span
+        style={{ opacity: opacity }}
+        className={"text-black dark:text-white"}
+      >
+        {children}
+      </motion.span>
+    </span>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { TextReveal } from "@/components/ui/text-reveal"
+```
+
+```tsx showLineNumbers
+<TextReveal>Magic UI will change the way you design.</TextReveal>
+```
+
+
+---
+title: Word Rotate
+date: 2024-05-21
+description: A vertical rotation of words
+author: dillionverma
+published: true
+---
+
+<ComponentPreview name="word-rotate-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/word-rotate
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install motion
+```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import { useEffect, useState } from "react"
+import { AnimatePresence, motion, MotionProps } from "motion/react"
+
+import { cn } from "@/lib/utils"
+
+interface WordRotateProps {
+  words: string[]
+  duration?: number
+  motionProps?: MotionProps
+  className?: string
+}
+
+export function WordRotate({
+  words,
+  duration = 2500,
+  motionProps = {
+    initial: { opacity: 0, y: -50 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 50 },
+    transition: { duration: 0.25, ease: "easeOut" },
+  },
+  className,
+}: WordRotateProps) {
+  const [index, setIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prevIndex) => (prevIndex + 1) % words.length)
+    }, duration)
+
+    // Clean up interval on unmount
+    return () => clearInterval(interval)
+  }, [words, duration])
+
+  return (
+    <div className="overflow-hidden py-2">
+      <AnimatePresence mode="wait">
+        <motion.h1
+          key={words[index]}
+          className={cn(className)}
+          {...motionProps}
+        >
+          {words[index]}
+        </motion.h1>
+      </AnimatePresence>
+    </div>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { WordRotate } from "@/components/ui/word-rotate"
+```
+
+```tsx showLineNumbers
+<WordRotate words={["Word", "Rotate"]} />
+```
+
+## Props
+
+| Prop          | Type              | Default | Description                                   |
+| ------------- | ----------------- | ------- | --------------------------------------------- |
+| `className`   | `string`          | `-`     | The class name to be applied to the component |
+| `duration`    | `number`          | `2500`  | Duration of the animation                     |
+| `words`       | `string[]`        | `""`    | An array of words to rotate through           |
+| `motionProps` | `HTMLMotionProps` | `{}`    | An object containing motion animation props   |
+
+
+---
+title: Scroll Based Velocity
+date: 2024-05-22
+description: Scrolling text whose speed changes based on scroll speed
+author: whyismynamerudy
+published: true
+---
+
+<ComponentPreview name="scroll-based-velocity-demo" />
+
+<ComponentPreview name="scroll-based-velocity-images-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/scroll-based-velocity
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Install the following dependencies:</Step>
+
+```bash
+npm install motion
+```
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import React, { useContext, useEffect, useRef, useState } from "react"
+import {
+  motion,
+  useAnimationFrame,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+  useVelocity,
+} from "motion/react"
+import type { MotionValue } from "motion/react"
+
+import { cn } from "@/lib/utils"
+
+interface ScrollVelocityRowProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode
+  baseVelocity?: number
+  direction?: 1 | -1
+}
+
+export const wrap = (min: number, max: number, v: number) => {
+  const rangeSize = max - min
+  return ((((v - min) % rangeSize) + rangeSize) % rangeSize) + min
+}
+
+const ScrollVelocityContext = React.createContext<MotionValue<number> | null>(
+  null
+)
+
+export function ScrollVelocityContainer({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  const { scrollY } = useScroll()
+  const scrollVelocity = useVelocity(scrollY)
+  const smoothVelocity = useSpring(scrollVelocity, {
+    damping: 50,
+    stiffness: 400,
+  })
+  const velocityFactor = useTransform(smoothVelocity, (v) => {
+    const sign = v < 0 ? -1 : 1
+    const magnitude = Math.min(5, (Math.abs(v) / 1000) * 5)
+    return sign * magnitude
+  })
+
+  return (
+    <ScrollVelocityContext.Provider value={velocityFactor}>
+      <div className={cn("relative w-full", className)} {...props}>
+        {children}
+      </div>
+    </ScrollVelocityContext.Provider>
+  )
+}
+
+export function ScrollVelocityRow(props: ScrollVelocityRowProps) {
+  const sharedVelocityFactor = useContext(ScrollVelocityContext)
+  if (sharedVelocityFactor) {
+    return (
+      <ScrollVelocityRowImpl {...props} velocityFactor={sharedVelocityFactor} />
+    )
+  }
+  return <ScrollVelocityRowLocal {...props} />
+}
+
+interface ScrollVelocityRowImplProps extends ScrollVelocityRowProps {
+  velocityFactor: MotionValue<number>
+}
+
+function ScrollVelocityRowImpl({
+  children,
+  baseVelocity = 5,
+  direction = 1,
+  className,
+  velocityFactor,
+  ...props
+}: ScrollVelocityRowImplProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const blockRef = useRef<HTMLDivElement>(null)
+  const [numCopies, setNumCopies] = useState(1)
+
+  const baseX = useMotionValue(0)
+  const baseDirectionRef = useRef<number>(direction >= 0 ? 1 : -1)
+  const currentDirectionRef = useRef<number>(direction >= 0 ? 1 : -1)
+  const unitWidth = useMotionValue(0)
+
+  const isInViewRef = useRef(true)
+  const isPageVisibleRef = useRef(true)
+  const prefersReducedMotionRef = useRef(false)
+
+  useEffect(() => {
+    const container = containerRef.current
+    const block = blockRef.current
+    if (!container || !block) return
+
+    const updateSizes = () => {
+      const cw = container.offsetWidth || 0
+      const bw = block.scrollWidth || 0
+      unitWidth.set(bw)
+      const nextCopies = bw > 0 ? Math.max(3, Math.ceil(cw / bw) + 2) : 1
+      setNumCopies((prev) => (prev === nextCopies ? prev : nextCopies))
+    }
+
+    updateSizes()
+
+    const ro = new ResizeObserver(updateSizes)
+    ro.observe(container)
+    ro.observe(block)
+
+    const io = new IntersectionObserver(([entry]) => {
+      isInViewRef.current = entry.isIntersecting
+    })
+    io.observe(container)
+
+    const handleVisibility = () => {
+      isPageVisibleRef.current = document.visibilityState === "visible"
+    }
+    document.addEventListener("visibilitychange", handleVisibility, {
+      passive: true,
+    })
+    handleVisibility()
+
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    const handlePRM = () => {
+      prefersReducedMotionRef.current = mq.matches
+    }
+    mq.addEventListener("change", handlePRM)
+    handlePRM()
+
+    return () => {
+      ro.disconnect()
+      io.disconnect()
+      document.removeEventListener("visibilitychange", handleVisibility)
+      mq.removeEventListener("change", handlePRM)
+    }
+  }, [children, unitWidth])
+
+  const x = useTransform([baseX, unitWidth], ([v, bw]) => {
+    const width = Number(bw) || 1
+    const offset = Number(v) || 0
+    return `${-wrap(0, width, offset)}px`
+  })
+
+  useAnimationFrame((_, delta) => {
+    if (!isInViewRef.current || !isPageVisibleRef.current) return
+    const dt = delta / 1000
+    const vf = velocityFactor.get()
+    const absVf = Math.min(5, Math.abs(vf))
+    const speedMultiplier = prefersReducedMotionRef.current ? 1 : 1 + absVf
+
+    if (absVf > 0.1) {
+      const scrollDirection = vf >= 0 ? 1 : -1
+      currentDirectionRef.current = baseDirectionRef.current * scrollDirection
+    }
+
+    const bw = unitWidth.get() || 0
+    if (bw <= 0) return
+    const pixelsPerSecond = (bw * baseVelocity) / 100
+    const moveBy =
+      currentDirectionRef.current * pixelsPerSecond * speedMultiplier * dt
+    baseX.set(baseX.get() + moveBy)
+  })
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn("w-full overflow-hidden whitespace-nowrap", className)}
+      {...props}
+    >
+      <motion.div
+        className="inline-flex transform-gpu items-center will-change-transform select-none"
+        style={{ x }}
+      >
+        {Array.from({ length: numCopies }).map((_, i) => (
+          <div
+            key={i}
+            ref={i === 0 ? blockRef : null}
+            aria-hidden={i !== 0}
+            className="inline-flex shrink-0 items-center"
+          >
+            {children}
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  )
+}
+
+function ScrollVelocityRowLocal(props: ScrollVelocityRowProps) {
+  const { scrollY } = useScroll()
+  const localVelocity = useVelocity(scrollY)
+  const localSmoothVelocity = useSpring(localVelocity, {
+    damping: 50,
+    stiffness: 400,
+  })
+  const localVelocityFactor = useTransform(localSmoothVelocity, (v) => {
+    const sign = v < 0 ? -1 : 1
+    const magnitude = Math.min(5, (Math.abs(v) / 1000) * 5)
+    return sign * magnitude
+  })
+  return (
+    <ScrollVelocityRowImpl {...props} velocityFactor={localVelocityFactor} />
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import {
+  ScrollVelocityContainer,
+  ScrollVelocityRow,
+} from "@/components/ui/scroll-based-velocity"
+```
+
+```tsx showLineNumbers
+<ScrollVelocityContainer className="text-4xl font-bold md:text-7xl">
+  <ScrollVelocityRow baseVelocity={20} direction={1}>
+    Velocity Scroll
+  </ScrollVelocityRow>
+  <ScrollVelocityRow baseVelocity={20} direction={-1}>
+    Velocity Scroll
+  </ScrollVelocityRow>
+</ScrollVelocityContainer>
+```
+
+## Props
+
+### ScrollVelocityContainer
+
+| Prop        | Type        | Default | Description                                   |
+| ----------- | ----------- | ------- | --------------------------------------------- |
+| `className` | `string`    | `-`     | The class name to be applied to the component |
+| `children`  | `ReactNode` | `-`     | Content to be animated                        |
+
+### ScrollVelocityRow
+
+| Prop           | Type        | Default | Description                                        |
+| -------------- | ----------- | ------- | -------------------------------------------------- |
+| `className`    | `string`    | `-`     | The class name to be applied to the row container  |
+| `children`     | `ReactNode` | `-`     | Content to be duplicated and scrolled              |
+| `baseVelocity` | `number`    | `5`     | Base scroll velocity percentage of content width   |
+| `direction`    | `1 \| -1`   | `1`     | Scroll direction (1 = left-to-right, -1 = reverse) |
+
+## Performance
+
+- Pauses updates when offscreen and when the tab is hidden.
+- Respects user preference for reduced motion.
+
+
+---
+title: Sparkles Text
+date: 2024-05-30
+description: A dynamic text that generates continuous sparkles with smooth transitions, perfect for highlighting text with animated stars.
+author: Draxx0
+published: true
+---
+
+<ComponentPreview name="sparkles-text-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/sparkles-text
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import { CSSProperties, ReactElement, useEffect, useState } from "react"
+import { motion } from "motion/react"
+
+import { cn } from "@/lib/utils"
+
+interface Sparkle {
+  id: string
+  x: string
+  y: string
+  color: string
+  delay: number
+  scale: number
+  lifespan: number
+}
+
+const Sparkle: React.FC<Sparkle> = ({ id, x, y, color, delay, scale }) => {
+  return (
+    <motion.svg
+      key={id}
+      className="pointer-events-none absolute z-20"
+      initial={{ opacity: 0, left: x, top: y }}
+      animate={{
+        opacity: [0, 1, 0],
+        scale: [0, scale, 0],
+        rotate: [75, 120, 150],
+      }}
+      transition={{ duration: 0.8, repeat: Infinity, delay }}
+      width="21"
+      height="21"
+      viewBox="0 0 21 21"
+    >
+      <path
+        d="M9.82531 0.843845C10.0553 0.215178 10.9446 0.215178 11.1746 0.843845L11.8618 2.72026C12.4006 4.19229 12.3916 6.39157 13.5 7.5C14.6084 8.60843 16.8077 8.59935 18.2797 9.13822L20.1561 9.82534C20.7858 10.0553 20.7858 10.9447 20.1561 11.1747L18.2797 11.8618C16.8077 12.4007 14.6084 12.3916 13.5 13.5C12.3916 14.6084 12.4006 16.8077 11.8618 18.2798L11.1746 20.1562C10.9446 20.7858 10.0553 20.7858 9.82531 20.1562L9.13819 18.2798C8.59932 16.8077 8.60843 14.6084 7.5 13.5C6.39157 12.3916 4.19225 12.4007 2.72023 11.8618L0.843814 11.1747C0.215148 10.9447 0.215148 10.0553 0.843814 9.82534L2.72023 9.13822C4.19225 8.59935 6.39157 8.60843 7.5 7.5C8.60843 6.39157 8.59932 4.19229 9.13819 2.72026L9.82531 0.843845Z"
+        fill={color}
+      />
+    </motion.svg>
+  )
+}
+
+interface SparklesTextProps {
+  /**
+   * @default <div />
+   * @type ReactElement
+   * @description
+   * The component to be rendered as the text
+   * */
+  as?: ReactElement
+
+  /**
+   * @default ""
+   * @type string
+   * @description
+   * The className of the text
+   */
+  className?: string
+
+  /**
+   * @required
+   * @type ReactNode
+   * @description
+   * The content to be displayed
+   * */
+  children: React.ReactNode
+
+  /**
+   * @default 10
+   * @type number
+   * @description
+   * The count of sparkles
+   * */
+  sparklesCount?: number
+
+  /**
+   * @default "{first: '#9E7AFF', second: '#FE8BBB'}"
+   * @type string
+   * @description
+   * The colors of the sparkles
+   * */
+  colors?: {
+    first: string
+    second: string
+  }
+}
+
+export const SparklesText: React.FC<SparklesTextProps> = ({
+  children,
+  colors = { first: "#9E7AFF", second: "#FE8BBB" },
+  className,
+  sparklesCount = 10,
+  ...props
+}) => {
+  const [sparkles, setSparkles] = useState<Sparkle[]>([])
+
+  useEffect(() => {
+    const generateStar = (): Sparkle => {
+      const starX = `${Math.random() * 100}%`
+      const starY = `${Math.random() * 100}%`
+      const color = Math.random() > 0.5 ? colors.first : colors.second
+      const delay = Math.random() * 2
+      const scale = Math.random() * 1 + 0.3
+      const lifespan = Math.random() * 10 + 5
+      const id = `${starX}-${starY}-${Date.now()}`
+      return { id, x: starX, y: starY, color, delay, scale, lifespan }
+    }
+
+    const initializeStars = () => {
+      const newSparkles = Array.from({ length: sparklesCount }, generateStar)
+      setSparkles(newSparkles)
+    }
+
+    const updateStars = () => {
+      setSparkles((currentSparkles) =>
+        currentSparkles.map((star) => {
+          if (star.lifespan <= 0) {
+            return generateStar()
+          } else {
+            return { ...star, lifespan: star.lifespan - 0.1 }
+          }
+        })
+      )
+    }
+
+    initializeStars()
+    const interval = setInterval(updateStars, 100)
+
+    return () => clearInterval(interval)
+  }, [colors.first, colors.second, sparklesCount])
+
+  return (
+    <div
+      className={cn("text-6xl font-bold", className)}
+      {...props}
+      style={
+        {
+          "--sparkles-first-color": `${colors.first}`,
+          "--sparkles-second-color": `${colors.second}`,
+        } as CSSProperties
+      }
+    >
+      <span className="relative inline-block">
+        {sparkles.map((sparkle) => (
+          <Sparkle key={sparkle.id} {...sparkle} />
+        ))}
+        <strong>{children}</strong>
+      </span>
+    </div>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { SparklesText } from "@/components/ui/sparkles-text"
+```
+
+```tsx showLineNumbers
+<SparklesText>Sparkles Text</SparklesText>
+```
+
+## Props
+
+| Prop            | Type     | Default                                 | Description                                        |
+| --------------- | -------- | --------------------------------------- | -------------------------------------------------- |
+| `children`      | `string` | `-`                                     | The content to display                             |
+| `className`     | `string` | `-`                                     | The class name to be applied to the sparkles text. |
+| `sparklesCount` | `number` | `10`                                    | sparkles count that appears on the text            |
+| `colors`        | `object` | `{first: '#A07CFE', second: '#FE8FB5'}` | the sparkles colors                                |
+
+## Credits
+
+- Credit to [@simonlejeune](https://www.simlej.dev/)
+
+
+
+
+---
+title: Spinning Text
+date: 2025-02-09
+description: The Spinning Text component animates text in a circular motion with customizable speed, direction, color, and transitions for dynamic and engaging effects.
+author: aayushbharti
+published: true
+---
+
+<ComponentPreview name="spinning-text-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/spinning-text
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import React, { ComponentPropsWithoutRef } from "react"
+import { motion, Transition, Variants } from "motion/react"
+
+import { cn } from "@/lib/utils"
+
+interface SpinningTextProps extends ComponentPropsWithoutRef<"div"> {
+  children: string | string[]
+  duration?: number
+  reverse?: boolean
+  radius?: number
+  transition?: Transition
+  variants?: {
+    container?: Variants
+    item?: Variants
+  }
+}
+
+const BASE_TRANSITION: Transition = {
+  repeat: Infinity,
+  ease: "linear",
+}
+
+const BASE_ITEM_VARIANTS: Variants = {
+  hidden: {
+    opacity: 1,
+  },
+  visible: {
+    opacity: 1,
+  },
+}
+
+export function SpinningText({
+  children,
+  duration = 10,
+  reverse = false,
+  radius = 5,
+  transition,
+  variants,
+  className,
+  style,
+}: SpinningTextProps) {
+  if (typeof children !== "string" && !Array.isArray(children)) {
+    throw new Error("children must be a string or an array of strings")
+  }
+
+  if (Array.isArray(children)) {
+    // Validate all elements are strings
+    if (!children.every((child) => typeof child === "string")) {
+      throw new Error("all elements in children array must be strings")
+    }
+    children = children.join("")
+  }
+
+  const letters = children.split("")
+  letters.push(" ")
+
+  const finalTransition: Transition = {
+    ...BASE_TRANSITION,
+    ...transition,
+    duration: (transition as { duration?: number })?.duration ?? duration,
+  }
+
+  const containerVariants: Variants = {
+    visible: { rotate: reverse ? -360 : 360 },
+    ...variants?.container,
+  }
+
+  const itemVariants: Variants = {
+    ...BASE_ITEM_VARIANTS,
+    ...variants?.item,
+  }
+
+  return (
+    <motion.div
+      className={cn("relative", className)}
+      style={{
+        ...style,
+      }}
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      transition={finalTransition}
+    >
+      {letters.map((letter, index) => (
+        <motion.span
+          aria-hidden="true"
+          key={`${index}-${letter}`}
+          variants={itemVariants}
+          className="absolute top-1/2 left-1/2 inline-block"
+          style={
+            {
+              "--index": index,
+              "--total": letters.length,
+              "--radius": radius,
+              transform: `
+                  translate(-50%, -50%)
+                  rotate(calc(360deg / var(--total) * var(--index)))
+                  translateY(calc(var(--radius, 5) * -1ch))
+                `,
+              transformOrigin: "center",
+            } as React.CSSProperties
+          }
+        >
+          {letter}
+        </motion.span>
+      ))}
+      <span className="sr-only">{children}</span>
+    </motion.div>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Examples
+
+### Reverse
+
+<ComponentPreview name="spinning-text-demo-2" />
+
+### Usage
+
+```tsx showLineNumbers
+import { SpinningText } from "@/components/ui/spinning-text"
+```
+
+```tsx showLineNumbers
+<SpinningText>learn more • earn more • grow more •</SpinningText>
+```
+
+## Props
+
+| Prop         | Type                                         | Default | Description                                             |
+| ------------ | -------------------------------------------- | ------- | ------------------------------------------------------- |
+| `children`   | `ReactElement`                               |         | The text content to be animated in a circular motion.   |
+| `style`      | `CSSProperties`                              | `{}`    | Custom styles for the text container.                   |
+| `duration`   | `number`                                     | `10`    | The duration of the full circular rotation animation.   |
+| `className`  | `string`                                     |         | A custom class name for the text container.             |
+| `reverse`    | `boolean`                                    | `false` | Determines if the animation should rotate in reverse.   |
+| `radius`     | `number`                                     | `5`     | The radius of the circular path for the text animation. |
+| `transition` | `Transition`                                 |         | Custom transition effects for the animation.            |
+| `variants`   | `{ container?: Variants; item?: Variants; }` |         | Variants for container and item animations.             |
+
+## Credits
+
+- Credit to [@AayushBharti](https://github.com/AayushBharti)
+
+
+---
+title: Text Highlighter
+date: 2025-02-11
+description: A text highlighter that mimics the effect of a human-drawn marker stroke.
+author: pratiyank
+published: true
+---
+
+<ComponentPreview name="highlighter-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/highlighter
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import { useEffect, useRef } from "react"
+import type React from "react"
+import { useInView } from "motion/react"
+import { annotate } from "rough-notation"
+import { type RoughAnnotation } from "rough-notation/lib/model"
+
+type AnnotationAction =
+  | "highlight"
+  | "underline"
+  | "box"
+  | "circle"
+  | "strike-through"
+  | "crossed-off"
+  | "bracket"
+
+interface HighlighterProps {
+  children: React.ReactNode
+  action?: AnnotationAction
+  color?: string
+  strokeWidth?: number
+  animationDuration?: number
+  iterations?: number
+  padding?: number
+  multiline?: boolean
+  isView?: boolean
+}
+
+export function Highlighter({
+  children,
+  action = "highlight",
+  color = "#ffd1dc",
+  strokeWidth = 1.5,
+  animationDuration = 600,
+  iterations = 2,
+  padding = 2,
+  multiline = true,
+  isView = false,
+}: HighlighterProps) {
+  const elementRef = useRef<HTMLSpanElement>(null)
+  const annotationRef = useRef<RoughAnnotation | null>(null)
+
+  const isInView = useInView(elementRef, {
+    once: true,
+    margin: "-10%",
+  })
+
+  // If isView is false, always show. If isView is true, wait for inView
+  const shouldShow = !isView || isInView
+
+  useEffect(() => {
+    if (!shouldShow) return
+
+    const element = elementRef.current
+    if (!element) return
+
+    const annotationConfig = {
+      type: action,
+      color,
+      strokeWidth,
+      animationDuration,
+      iterations,
+      padding,
+      multiline,
+    }
+
+    const annotation = annotate(element, annotationConfig)
+
+    annotationRef.current = annotation
+    annotationRef.current.show()
+
+    const resizeObserver = new ResizeObserver(() => {
+      annotation.hide()
+      annotation.show()
+    })
+
+    resizeObserver.observe(element)
+    resizeObserver.observe(document.body)
+
+    return () => {
+      if (element) {
+        annotate(element, { type: action }).remove()
+        resizeObserver.disconnect()
+      }
+    }
+  }, [
+    shouldShow,
+    action,
+    color,
+    strokeWidth,
+    animationDuration,
+    iterations,
+    padding,
+    multiline,
+  ])
+
+  return (
+    <span ref={elementRef} className="relative inline-block bg-transparent">
+      {children}
+    </span>
+  )
+}
+
+```
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { Highlighter } from "@/components/ui/highlighter"
+```
+
+```tsx showLineNumbers
+<p>
+  The{" "}
+  <Highlighter action="underline" color="#FF9800">
+    Magic UI Highlighter
+  </Highlighter>{" "}
+  makes important{" "}
+  <Highlighter action="highlight" color="#87CEFA">
+    text stand out
+  </Highlighter>{" "}
+  effortlessly.
+</p>
+```
+
+## Props
+
+Here's the updated props table with units specified for the numerical values:
+
+| Prop                | Type                                                                                                | Default       | Description                                                                  |
+| ------------------- | --------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------- |
+| `children`          | `React.ReactNode`                                                                                   | Required      | The content to be highlighted/annotated.                                     |
+| `color`             | `string`                                                                                            | `"#ffd1dc"`   | The color of the highlight.                                                  |
+| `action`            | `"highlight" \| "circle" \| "box" \| "bracket" \| "crossed-off" \| "strike-through" \| "underline"` | `"highlight"` | The type of annotation effect to apply.                                      |
+| `strokeWidth`       | `number`                                                                                            | `1.5px`       | The width of the annotation stroke.                                          |
+| `animationDuration` | `number`                                                                                            | `500ms`       | Duration of the animation in milliseconds.                                   |
+| `iterations`        | `number`                                                                                            | `2`           | Number of times to draw the annotation (adds a sketchy effect when > 1).     |
+| `padding`           | `number`                                                                                            | `2px`         | Padding between the element and the annotation.                              |
+| `multiline`         | `boolean`                                                                                           | `true`        | Whether to annotate across multiple lines or treat content as a single line. |
+| `isView`            | `boolean`                                                                                           | `false`       | Controls whether the animation starts only when the element enters viewport. |
+
+## Credits
+
+- Credit to [@pratiyank](https://github.com/Pratiyankkumar) for this component!
+
+
+---
+title: Flickering Grid
+date: 2024-08-15
+description: A flickering grid background made with SVGs, fully customizable using Tailwind CSS.
+author: dillionverma
+published: true
+---
+
+<ComponentPreview name="flickering-grid-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/flickering-grid
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
+
+import { cn } from "@/lib/utils"
+
+interface FlickeringGridProps extends React.HTMLAttributes<HTMLDivElement> {
+  squareSize?: number
+  gridGap?: number
+  flickerChance?: number
+  color?: string
+  width?: number
+  height?: number
+  className?: string
+  maxOpacity?: number
+}
+
+export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
+  squareSize = 4,
+  gridGap = 6,
+  flickerChance = 0.3,
+  color = "rgb(0, 0, 0)",
+  width,
+  height,
+  className,
+  maxOpacity = 0.3,
+  ...props
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isInView, setIsInView] = useState(false)
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 })
+
+  const memoizedColor = useMemo(() => {
+    const toRGBA = (color: string) => {
+      if (typeof window === "undefined") {
+        return `rgba(0, 0, 0,`
+      }
+      const canvas = document.createElement("canvas")
+      canvas.width = canvas.height = 1
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return "rgba(255, 0, 0,"
+      ctx.fillStyle = color
+      ctx.fillRect(0, 0, 1, 1)
+      const [r, g, b] = Array.from(ctx.getImageData(0, 0, 1, 1).data)
+      return `rgba(${r}, ${g}, ${b},`
+    }
+    return toRGBA(color)
+  }, [color])
+
+  const setupCanvas = useCallback(
+    (canvas: HTMLCanvasElement, width: number, height: number) => {
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = width * dpr
+      canvas.height = height * dpr
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      const cols = Math.floor(width / (squareSize + gridGap))
+      const rows = Math.floor(height / (squareSize + gridGap))
+
+      const squares = new Float32Array(cols * rows)
+      for (let i = 0; i < squares.length; i++) {
+        squares[i] = Math.random() * maxOpacity
+      }
+
+      return { cols, rows, squares, dpr }
+    },
+    [squareSize, gridGap, maxOpacity]
+  )
+
+  const updateSquares = useCallback(
+    (squares: Float32Array, deltaTime: number) => {
+      for (let i = 0; i < squares.length; i++) {
+        if (Math.random() < flickerChance * deltaTime) {
+          squares[i] = Math.random() * maxOpacity
+        }
+      }
+    },
+    [flickerChance, maxOpacity]
+  )
+
+  const drawGrid = useCallback(
+    (
+      ctx: CanvasRenderingContext2D,
+      width: number,
+      height: number,
+      cols: number,
+      rows: number,
+      squares: Float32Array,
+      dpr: number
+    ) => {
+      ctx.clearRect(0, 0, width, height)
+      ctx.fillStyle = "transparent"
+      ctx.fillRect(0, 0, width, height)
+
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          const opacity = squares[i * rows + j]
+          ctx.fillStyle = `${memoizedColor}${opacity})`
+          ctx.fillRect(
+            i * (squareSize + gridGap) * dpr,
+            j * (squareSize + gridGap) * dpr,
+            squareSize * dpr,
+            squareSize * dpr
+          )
+        }
+      }
+    },
+    [memoizedColor, squareSize, gridGap]
+  )
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const container = containerRef.current
+    if (!canvas || !container) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    let animationFrameId: number
+    let gridParams: ReturnType<typeof setupCanvas>
+
+    const updateCanvasSize = () => {
+      const newWidth = width || container.clientWidth
+      const newHeight = height || container.clientHeight
+      setCanvasSize({ width: newWidth, height: newHeight })
+      gridParams = setupCanvas(canvas, newWidth, newHeight)
+    }
+
+    updateCanvasSize()
+
+    let lastTime = 0
+    const animate = (time: number) => {
+      if (!isInView) return
+
+      const deltaTime = (time - lastTime) / 1000
+      lastTime = time
+
+      updateSquares(gridParams.squares, deltaTime)
+      drawGrid(
+        ctx,
+        canvas.width,
+        canvas.height,
+        gridParams.cols,
+        gridParams.rows,
+        gridParams.squares,
+        gridParams.dpr
+      )
+      animationFrameId = requestAnimationFrame(animate)
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateCanvasSize()
+    })
+
+    resizeObserver.observe(container)
+
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting)
+      },
+      { threshold: 0 }
+    )
+
+    intersectionObserver.observe(canvas)
+
+    if (isInView) {
+      animationFrameId = requestAnimationFrame(animate)
+    }
+
+    return () => {
+      cancelAnimationFrame(animationFrameId)
+      resizeObserver.disconnect()
+      intersectionObserver.disconnect()
+    }
+  }, [setupCanvas, updateSquares, drawGrid, width, height, isInView])
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(`h-full w-full ${className}`)}
+      {...props}
+    >
+      <canvas
+        ref={canvasRef}
+        className="pointer-events-none"
+        style={{
+          width: canvasSize.width,
+          height: canvasSize.height,
+        }}
+      />
+    </div>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Examples
+
+### Rounded
+
+<ComponentPreview name="flickering-grid-rounded-demo" />
+
+### Usage
+
+```tsx showLineNumbers
+import { FlickeringGrid } from "@/components/ui/flickering-grid"
+```
+
+```tsx showLineNumbers
+<FlickeringGrid />
+```
+
+## Props
+
+| Prop            | Type     | Default          | Description                           |
+| --------------- | -------- | ---------------- | ------------------------------------- |
+| `squareSize`    | `number` | `4`              | Size of each square in the grid       |
+| `gridGap`       | `number` | `6`              | Gap between squares in the grid       |
+| `flickerChance` | `number` | `0.3`            | Probability of a square flickering    |
+| `color`         | `string` | `"rgb(0, 0, 0)"` | Color of the squares                  |
+| `width`         | `number` | `-`              | Width of the canvas                   |
+| `height`        | `number` | `-`              | Height of the canvas                  |
+| `className`     | `string` | `-`              | Additional CSS classes for the canvas |
+| `maxOpacity`    | `number` | `0.2`            | Maximum opacity of the squares        |
+
+
+---
+title: Pixel Image
+date: 2025-06-05
+description: A component that displays your image with a pixelated effect, enhancing the visual appeal of any image in your website.
+author: dharminnagar
+published: true
+---
+
+<ComponentPreview name="pixel-image-demo" />
+
+## Features
+
+- Pixelated image reveal animation
+- Customizable grid size and layout
+- Supports grayscale-to-color animation
+- Adjustable animation duration and delay
+- Lightweight and easy to use
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/pixel-image
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
+
+import { cn } from "@/lib/utils"
+
+type Grid = {
+  rows: number
+  cols: number
+}
+
+const DEFAULT_GRIDS: Record<string, Grid> = {
+  "6x4": { rows: 4, cols: 6 },
+  "8x8": { rows: 8, cols: 8 },
+  "8x3": { rows: 3, cols: 8 },
+  "4x6": { rows: 6, cols: 4 },
+  "3x8": { rows: 8, cols: 3 },
+}
+
+type PredefinedGridKey = keyof typeof DEFAULT_GRIDS
+
+interface PixelImageProps {
+  src: string
+  grid?: PredefinedGridKey
+  customGrid?: Grid
+  grayscaleAnimation?: boolean
+  pixelFadeInDuration?: number // in ms
+  maxAnimationDelay?: number // in ms
+  colorRevealDelay?: number // in ms
+}
+
+export const PixelImage = ({
+  src,
+  grid = "6x4",
+  grayscaleAnimation = true,
+  pixelFadeInDuration = 1000,
+  maxAnimationDelay = 1200,
+  colorRevealDelay = 1300,
+  customGrid,
+}: PixelImageProps) => {
+  const [isVisible, setIsVisible] = useState(false)
+  const [showColor, setShowColor] = useState(false)
+
+  const MIN_GRID = 1
+  const MAX_GRID = 16
+
+  const { rows, cols } = useMemo(() => {
+    const isValidGrid = (grid?: Grid) => {
+      if (!grid) return false
+      const { rows, cols } = grid
+      return (
+        Number.isInteger(rows) &&
+        Number.isInteger(cols) &&
+        rows >= MIN_GRID &&
+        cols >= MIN_GRID &&
+        rows <= MAX_GRID &&
+        cols <= MAX_GRID
+      )
+    }
+
+    return isValidGrid(customGrid) ? customGrid! : DEFAULT_GRIDS[grid]
+  }, [customGrid, grid])
+
+  useEffect(() => {
+    setIsVisible(true)
+    const colorTimeout = setTimeout(() => {
+      setShowColor(true)
+    }, colorRevealDelay)
+    return () => clearTimeout(colorTimeout)
+  }, [colorRevealDelay])
+
+  const pieces = useMemo(() => {
+    const total = rows * cols
+    return Array.from({ length: total }, (_, index) => {
+      const row = Math.floor(index / cols)
+      const col = index % cols
+
+      const clipPath = `polygon(
+        ${col * (100 / cols)}% ${row * (100 / rows)}%,
+        ${(col + 1) * (100 / cols)}% ${row * (100 / rows)}%,
+        ${(col + 1) * (100 / cols)}% ${(row + 1) * (100 / rows)}%,
+        ${col * (100 / cols)}% ${(row + 1) * (100 / rows)}%
+      )`
+
+      const delay = Math.random() * maxAnimationDelay
+      return {
+        clipPath,
+        delay,
+      }
+    })
+  }, [rows, cols, maxAnimationDelay])
+
+  return (
+    <div className="relative h-72 w-72 select-none md:h-96 md:w-96">
+      {pieces.map((piece, index) => (
+        <div
+          key={index}
+          className={cn(
+            "absolute inset-0 transition-all ease-out",
+            isVisible ? "opacity-100" : "opacity-0"
+          )}
+          style={{
+            clipPath: piece.clipPath,
+            transitionDelay: `${piece.delay}ms`,
+            transitionDuration: `${pixelFadeInDuration}ms`,
+          }}
+        >
+          <img
+            src={src}
+            alt={`Pixel image piece ${index + 1}`}
+            className={cn(
+              "z-1 rounded-[2.5rem] object-cover",
+              grayscaleAnimation && (showColor ? "grayscale-0" : "grayscale")
+            )}
+            style={{
+              transition: grayscaleAnimation
+                ? `filter ${pixelFadeInDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`
+                : "none",
+            }}
+            draggable={false}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { PixelImage } from "@/registry/magicui/pixel-image"
+```
+
+```tsx showLineNumbers
+<PixelImage src="/pixel-image-demo.jpg" grid="8x8" />
+```
+
+## Props
+
+| Prop                  | Type                                        | Default | Description                                    |
+| --------------------- | ------------------------------------------- | ------- | ---------------------------------------------- |
+| `src`                 | `string`                                    | —       | The image source URL                           |
+| `grid`                | `"6x4" \| "8x8" \| "8x3" \| "4x6" \| "3x8"` | `"8x8"` | Predefined grid layout                         |
+| `customGrid`          | `{ rows: number; cols: number; }`           | —       | Custom grid layout (overrides `grid`)          |
+| `grayscaleAnimation`  | `boolean`                                   | `true`  | Whether to animate from grayscale to color     |
+| `pixelFadeInDuration` | `number`                                    | `1000`  | Duration (ms) for each pixel fade-in animation |
+| `maxAnimationDelay`   | `number`                                    | `1200`  | Maximum random delay (ms) for pixel animation  |
+| `colorRevealDelay`    | `number`                                    | `1500`  | Delay (ms) before revealing color              |
+
+### Grid Type
+
+```typescript
+// Predefined grid options
+"6x4" | "8x8" | "8x3" | "4x6" | "3x8"
+
+// Custom grid example
+customGrid={{ rows: 5, cols: 10 }}
+```
+
+## Note
+
+- Since the pixelation effect is purely decorative, make sure to provide text alternatives (like descriptions or labels) for any important content shown in the image. This ensures the content is accessible to screen reader users.
+
+## Credits
+
+- Credit to [@dharminnagar](https://x.com/dharminnagar) for implementation
+
+
+---
+title: Pulsating Button
+date: 2024-07-23
+description: An animated pulsating button useful for capturing attention of users.
+author: shikhap04
+published: true
+---
+
+<ComponentPreview name="pulsating-button-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/pulsating-button
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+import React from "react"
+
+import { cn } from "@/lib/utils"
+
+interface PulsatingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  pulseColor?: string
+  duration?: string
+}
+
+export const PulsatingButton = React.forwardRef<
+  HTMLButtonElement,
+  PulsatingButtonProps
+>(
+  (
+    {
+      className,
+      children,
+      pulseColor = "#808080",
+      duration = "1.5s",
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <button
+        ref={ref}
+        className={cn(
+          "bg-primary text-primary-foreground relative flex cursor-pointer items-center justify-center rounded-lg px-4 py-2 text-center",
+          className
+        )}
+        style={
+          {
+            "--pulse-color": pulseColor,
+            "--duration": duration,
+          } as React.CSSProperties
+        }
+        {...props}
+      >
+        <div className="relative z-10">{children}</div>
+        <div className="absolute top-1/2 left-1/2 size-full -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-lg bg-inherit" />
+      </button>
+    )
+  }
+)
+
+PulsatingButton.displayName = "PulsatingButton"
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+<Step>Add the required CSS animations</Step>
+
+Add the following animations to your global CSS file.
+
+```css title="app/globals.css" showLineNumbers {2, 4-12}
+@theme inline {
+  --animate-pulse: pulse var(--duration) ease-out infinite;
+
+  @keyframes pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 var(--pulse-color);
+    }
+    50% {
+      box-shadow: 0 0 0 8px var(--pulse-color);
+    }
+  }
+}
+```
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { PulsatingButton } from "@/components/ui/pulsating-button"
+```
+
+```tsx showLineNumbers
+<PulsatingButton>Pulsating Button</PulsatingButton>
+```
+
+## Props
+
+| Prop         | Type              | Default | Description                                              |
+| ------------ | ----------------- | ------- | -------------------------------------------------------- |
+| `children`   | `React.ReactNode` | `-`     | The content of the button.                               |
+| `className`  | `string`          | `-`     | Additional class names for the button.                   |
+| `pulseColor` | `string`          | `-`     | The rbg numbers only for the color of the pulsing waves. |
+| `duration`   | `string`          | `-`     | The time span of one pulse.                              |
+
+## Credits
+
+- Credit to [@shikhap04](https://github.com/shikhap04)
+
+
+---
+title: Interactive Hover Button
+date: 2024-12-17
+description: A visually engaging button component that responds to hover with dynamic transitions, adapting smoothly between light and dark modes for enhanced user interactivity.
+author: aayushbharti
+published: true
+---
+
+<ComponentPreview name="interactive-hover-button-demo" />
+
+## Installation
+
+<Tabs defaultValue="cli">
+
+<TabsList>
+  <TabsTrigger value="cli">CLI</TabsTrigger>
+  <TabsTrigger value="manual">Manual</TabsTrigger>
+</TabsList>
+<TabsContent value="cli">
+
+```bash
+npx shadcn@latest add @magicui/interactive-hover-button
+```
+
+</TabsContent>
+
+<TabsContent value="manual">
+
+<Steps>
+
+<Step>Copy and paste the following code into your project.</Step>
+
+```tsx
+import { ArrowRight } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+export function InteractiveHoverButton({
+  children,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={cn(
+        "group bg-background relative w-auto cursor-pointer overflow-hidden rounded-full border p-2 px-6 text-center font-semibold",
+        className
+      )}
+      {...props}
+    >
+      <div className="flex items-center gap-2">
+        <div className="bg-primary h-2 w-2 rounded-full transition-all duration-300 group-hover:scale-[100.8]"></div>
+        <span className="inline-block transition-all duration-300 group-hover:translate-x-12 group-hover:opacity-0">
+          {children}
+        </span>
+      </div>
+      <div className="text-primary-foreground absolute top-0 z-10 flex h-full w-full translate-x-12 items-center justify-center gap-2 opacity-0 transition-all duration-300 group-hover:-translate-x-5 group-hover:opacity-100">
+        <span>{children}</span>
+        <ArrowRight />
+      </div>
+    </button>
+  )
+}
+
+```
+
+<Step>Update the import paths to match your project setup.</Step>
+
+</Steps>
+
+</TabsContent>
+
+</Tabs>
+
+## Usage
+
+```tsx showLineNumbers
+import { InteractiveHoverButton } from "@/components/ui/interactive-hover-button"
+```
+
+```tsx showLineNumbers
+<InteractiveHoverButton>Interactive Hover Button</InteractiveHoverButton>
+```
+
+## Props
+
+| Prop        | Type     | Default  | Description                                   |
+| ----------- | -------- | -------- | --------------------------------------------- |
+| `text`      | `string` | `Button` | The text to be displayed inside the button    |
+| `className` | `string` | `-`      | Additional class names to style the component |
+
+## Credits
+
+- Credit to [@AayushBharti](https://github.com/AayushBharti)

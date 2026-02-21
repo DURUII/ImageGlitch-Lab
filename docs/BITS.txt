@@ -1,0 +1,496 @@
+npm install three postprocessing @react-three/fiber @react-three/postprocessing
+
+import Dither from './Dither';
+
+<div style={{ width: '100%', height: '600px', position: 'relative' }}>
+  <Dither
+    waveColor={[0.5,0.5,0.5]}
+    disableAnimation={false}
+    enableMouseInteraction
+    mouseRadius={0.3}
+    colorNum={4}
+    waveAmplitude={0.3}
+    waveFrequency={3}
+    waveSpeed={0.05}
+  />
+</div>
+
+npx shadcn@latest add @react-bits/Folder-TS-TW
+
+
+import Folder from './Folder'
+
+<div style={{ height: '600px', position: 'relative' }}>
+  <Folder size={2} color="#5227FF" className="custom-folder"
+  color="#5227FF"
+  size={2}
+/>
+</div>
+
+npx shadcn@latest add @react-bits/Grainient-TS-TW
+
+import Grainient from './Grainient';
+
+<div style={{ width: '100%', height: '600px', position: 'relative' }}>
+  <Grainient
+    color1="#FF9FFC"
+    color2="#5227FF"
+    color3="#B19EEF"
+    timeSpeed={0.25}
+    colorBalance={0}
+    warpStrength={1}
+    warpFrequency={5}
+    warpSpeed={2}
+    warpAmplitude={50}
+    blendAngle={0}
+    blendSoftness={0.05}
+    rotationAmount={500}
+    noiseScale={2}
+    grainAmount={0.1}
+    grainScale={2}
+    grainAnimated={false}
+    contrast={1.5}
+    gamma={1}
+    saturation={1}
+    centerX={0}
+    centerY={0}
+    zoom={0.9}
+  />
+</div>
+
+npx shadcn@latest add @react-bits/Lanyard-TS-TW
+
+import Lanyard from './Lanyard'
+
+<Lanyard position={[0, 0, 20]} gravity={[0, -40, 0]} />
+
+/* IMPORTANT INFO BELOW
+
+1. You MUST have the card.glb and lanyard.png files in your project and import them
+- these can be downloaded from the repo's files, under src/assets/lanyard
+
+2. You can edit your card.glb file in this online .glb editor and change the texture:
+- https://modelviewer.dev/editor/
+
+4. The png file is the texture for the lanyard's band and can be edited in any image editor
+
+5. Your Vite configuration must be updated to include the following in vite.config.js:
+assetsInclude: ['**/*.glb']
+
+6. For TS users, you might need these changes:
+
+- src/global.d.ts
+export { };
+
+declare module '*.glb';
+declare module '*.png';
+
+declare module 'meshline' {
+  export const MeshLineGeometry: any;
+  export const MeshLineMaterial: any;
+}
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      meshLineGeometry: any;
+      meshLineMaterial: any;
+    }
+  }
+}
+
+- src/vite-env.d.ts
+/// <reference types="vite/client"
+  position={[0,0,24]}
+  gravity={[0,-40,0]}
+/>
+declare module '*.glb';
+declare module '*.png';
+*/
+
+
+npx shadcn@latest add @react-bits/LightRays-TS-TW
+
+import LightRays from './LightRays';
+
+<div style={{ width: '100%', height: '600px', position: 'relative' }}>
+  <LightRays
+    raysOrigin="top-center"
+    raysColor="#ffffff"
+    raysSpeed={1}
+    lightSpread={0.5}
+    rayLength={3}
+    followMouse={true}
+    mouseInfluence={0.1}
+    noiseAmount={0}
+    distortion={0}
+    className="custom-rays"
+    pulsating={false}
+    fadeDistance={1}
+    saturation={1}
+/>
+</div>
+
+
+npx shadcn@latest add @react-bits/LogoLoop-TS-TW
+
+import LogoLoop from './LogoLoop';
+import { SiReact, SiNextdotjs, SiTypescript, SiTailwindcss } from 'react-icons/si';
+
+const techLogos = [
+  { node: <SiReact />, title: "React", href: "https://react.dev" },
+  { node: <SiNextdotjs />, title: "Next.js", href: "https://nextjs.org" },
+  { node: <SiTypescript />, title: "TypeScript", href: "https://www.typescriptlang.org" },
+  { node: <SiTailwindcss />, title: "Tailwind CSS", href: "https://tailwindcss.com" },
+];
+
+// Alternative with image sources
+const imageLogos = [
+  { src: "/logos/company1.png", alt: "Company 1", href: "https://company1.com" },
+  { src: "/logos/company2.png", alt: "Company 2", href: "https://company2.com" },
+  { src: "/logos/company3.png", alt: "Company 3", href: "https://company3.com" },
+];
+
+function App() {
+  return (
+    <div style={{ height: '200px', position: 'relative', overflow: 'hidden'}}>
+      {/* Basic horizontal loop */}
+      <LogoLoop
+        logos={techLogos}
+        speed={100}
+        direction="left"
+        logoHeight={60}
+        gap={60}
+        hoverSpeed={0}
+        scaleOnHover
+        fadeOut
+        fadeOutColor="#ffffff"
+        ariaLabel="Technology partners"
+      />
+      
+      {/* Vertical loop with deceleration on hover */}
+      <LogoLoop
+        logos={techLogos}
+        speed={100}
+        direction="left"
+        logoHeight={60}
+        gap={60}
+        hoverSpeed={0}
+        fadeOut
+  useCustomRender={false}
+/>
+    </div>
+  );
+}
+
+npx shadcn@latest add @react-bits/PixelCard-TS-TW
+
+import PixelCard from './PixelCard';
+
+<PixelCard variant="pink">
+  // your card content (use position: absolute)
+</PixelCard>
+
+
+npx shadcn@latest add @react-bits/StickerPeel-TS-TW
+
+import StickerPeel from './StickerPeel'
+import logo from './assets/sticker.png'
+  
+<StickerPeel
+  imageSrc={logo}
+  width={200}
+  rotate={0}
+  peelBackHoverPct={30}
+  peelBackActivePct={40}
+  shadowIntensity={0.5}
+  lightingIntensity={0.1}
+  initialPosition={{ x: -100, y: 100 }}
+  peelDirection={0}
+/>
+
+npx shadcn@latest add @react-bits/BounceCards-TS-TW
+
+import BounceCards from './BounceCards'
+
+const images = [
+  "https://picsum.photos/400/400?grayscale",
+  "https://picsum.photos/500/500?grayscale",
+  "https://picsum.photos/600/600?grayscale",
+  "https://picsum.photos/700/700?grayscale",
+  "https://picsum.photos/300/300?grayscale"
+];
+
+const transformStyles = [
+  "rotate(5deg) translate(-150px)",
+  "rotate(0deg) translate(-70px)",
+  "rotate(-5deg)",
+  "rotate(5deg) translate(70px)",
+  "rotate(-5deg) translate(150px)"
+];
+
+<BounceCards
+  className="custom-bounceCards"
+  images={images}
+  containerWidth={500}
+  containerHeight={250}
+  animationDelay={1}
+  animationStagger={0.08}
+  easeType="elastic.out(1, 0.5)"
+  transformStyles={transformStyles}
+  enableHover={false}
+/>
+
+npx shadcn@latest add @react-bits/Carousel-TS-TW
+
+import Carousel from './Carousel'
+
+<div style={{ height: '600px', position: 'relative' }}>
+  <Carousel
+    baseWidth={300}
+    autoplay={false}
+    autoplayDelay={3000}
+    pauseOnHover={false}
+    loop={false}
+    round={false}
+  />
+</div>
+
+npx shadcn@latest add @react-bits/CurvedLoop-TS-TW
+
+import CurvedLoop from './CurvedLoop';
+
+// Basic usage
+<CurvedLoop marqueeText="Welcome to React Bits ✦" />
+
+// With custom props
+<CurvedLoop 
+  marqueeText="Be ✦ Creative ✦ With ✦ React ✦ Bits ✦"
+  speed={2}
+  curveAmount={400}
+  direction="right"
+  interactive
+  className="custom-text-style"
+/>
+
+// Non-interactive with slower speed
+<CurvedLoop 
+  marqueeText="Be ✦ Creative ✦ With ✦ React ✦ Bits ✦"
+  speed={2}
+  curveAmount={400}
+  interactive
+/>
+
+npx shadcn@latest add @react-bits/ShinyText-TS-TW
+
+import ShinyText from './ShinyText';
+
+<ShinyText
+  text="✨ Shiny Text Effect"
+  speed={2}
+  delay={0}
+  color="#b5b5b5"
+  shineColor="#ffffff"
+  spread={120}
+  direction="left"
+  yoyo={false}
+  pauseOnHover={false}
+  disabled={false}
+/>
+
+npx shadcn@latest add @react-bits/AnimatedList-TS-TW
+
+import AnimatedList from './AnimatedList'
+
+const items = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6', 'Item 7', 'Item 8', 'Item 9', 'Item 10']; 
+  
+<AnimatedList
+  items={items}
+  onItemSelect={(item, index) => console.log(item, index)}
+  showGradients
+  enableArrowNavigation
+  displayScrollbar
+/>
+
+npx shadcn@latest add @react-bits/CircularGallery-TS-TW
+
+import CircularGallery from './CircularGallery'
+
+<div style={{ height: '600px', position: 'relative' }}>
+  <CircularGallery bend={3} textColor="#ffffff" borderRadius={0.05} scrollEase={0.02}
+  bend={1}
+  borderRadius={0.05}
+  scrollSpeed={2}
+  scrollEase={0.05}
+/>
+</div>
+
+npx shadcn@latest add @react-bits/FluidGlass-TS-TW
+
+// IMPORTANT INFO BELOW
+// This component requires a 3D model to function correctly.
+// You can find three example models in the 'public/assets/3d' directory of the repository:
+// - 'lens.glb'
+// - 'bar.glb'
+// - 'cube.glb'
+// Make sure to place these models in the correct directory or update the paths accordingly.
+
+import FluidGlass from './FluidGlass'
+
+<div style={{ height: '600px', position: 'relative' }}>
+  <FluidGlass 
+    mode="lens" // or "bar", "cube"
+    lensProps={{
+      scale: 0.25,
+      ior: 1.15,
+      thickness: 5,
+      chromaticAberration: 0.1,
+      anisotropy: 0.01  
+    }}
+    barProps={} // add specific props if using bar mode
+    cubeProps={} // add specific props if using cube mode
+    mode="lens"
+    scale={0.25}
+    ior={1.15}
+    thickness={2}
+    transmission={1}
+    roughness={0}
+    chromaticAberration={0.05}
+    anisotropy={0.01}
+/>
+</div>
+
+npx shadcn@latest add @react-bits/TiltedCard-TS-TW
+
+import TiltedCard from './TiltedCard';
+
+<TiltedCard
+  imageSrc="https://i.scdn.co/image/ab67616d0000b273d9985092cd88bffd97653b58"
+  altText="Kendrick Lamar - GNX Album Cover"
+  captionText="Kendrick Lamar - GNX"
+  containerHeight="300px"
+  containerWidth="300px"
+  imageHeight="300px"
+  imageWidth="300px"
+  rotateAmplitude={12}
+  scaleOnHover={1.05}
+  showMobileWarning={false}
+  showTooltip
+  displayOverlayContent
+  overlayContent={
+    <p className="tilted-card-demo-text">
+      Kendrick Lamar - GNX
+    </p>
+  }
+/>
+  
+
+npx shadcn@latest add @react-bits/GlassSurface-TS-TW
+
+import GlassSurface from './GlassSurface'
+
+// Basic usage
+<GlassSurface 
+  width={300} 
+  height={200}
+  borderRadius={50}
+  className="my-custom-class"
+>
+  <h2>Glass Surface Content</h2>
+</GlassSurface>
+
+// Custom displacement effects
+<GlassSurface
+  displace={0.5}
+  distortionScale={-180}
+  redOffset={0}
+  greenOffset={10}
+  blueOffset={20}
+  brightness={50}
+  opacity={0.93}
+  mixBlendMode="screen"
+>
+  <span>Advanced Glass Distortion</span>
+</GlassSurface>
+
+npx shadcn@latest add @react-bits/ChromaGrid-TS-TW
+
+import ChromaGrid from './ChromaGrid'
+
+const items = [
+  {
+    image: "https://i.pravatar.cc/300?img=1",
+    title: "Sarah Johnson",
+    subtitle: "Frontend Developer",
+    handle: "@sarahjohnson",
+    borderColor: "#3B82F6",
+    gradient: "linear-gradient(145deg, #3B82F6, #000)",
+    url: "https://github.com/sarahjohnson"
+  },
+  {
+    image: "https://i.pravatar.cc/300?img=2",
+    title: "Mike Chen",
+    subtitle: "Backend Engineer",
+    handle: "@mikechen",
+    borderColor: "#10B981",
+    gradient: "linear-gradient(180deg, #10B981, #000)",
+    url: "https://linkedin.com/in/mikechen"
+  }
+];
+
+<div style={{ height: '600px', position: 'relative' }}>
+  <ChromaGrid 
+    items={items}
+    radius={300}
+    damping={0.45}
+    fadeOut={0.6}
+    ease="power3.out"
+  />
+</div>
+
+npx shadcn@latest add @react-bits/Counter-TS-TW
+
+import Counter from './Counter';
+
+<Counter
+  value={4}
+  places={[100, 10, 1]}
+  fontSize={80}
+  padding={5}
+  gap={10}
+  textColor="white"
+  fontWeight={900}
+  digitPlaceHolders
+/>
+
+npx shadcn@latest add @react-bits/BounceCards-TS-TW
+
+import BounceCards from './BounceCards'
+
+const images = [
+  "https://picsum.photos/400/400?grayscale",
+  "https://picsum.photos/500/500?grayscale",
+  "https://picsum.photos/600/600?grayscale",
+  "https://picsum.photos/700/700?grayscale",
+  "https://picsum.photos/300/300?grayscale"
+];
+
+const transformStyles = [
+  "rotate(5deg) translate(-150px)",
+  "rotate(0deg) translate(-70px)",
+  "rotate(-5deg)",
+  "rotate(5deg) translate(70px)",
+  "rotate(-5deg) translate(150px)"
+];
+
+<BounceCards
+  className="custom-bounceCards"
+  images={images}
+  containerWidth={500}
+  containerHeight={250}
+  animationDelay={1}
+  animationStagger={0.08}
+  easeType="elastic.out(1, 0.5)"
+  transformStyles={transformStyles}
+  enableHover={false}
+/>

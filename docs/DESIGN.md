@@ -2,6 +2,10 @@
 
 Reference: [ToyFight.co](https://toyfight.co) - Awwwards Site of the Day (June 2024)
 
+Magic UI: docs/MAGICUI.txt
+
+React-Bits: docs/BITS.txt
+
 ---
 
 ## CRITICAL RULES
