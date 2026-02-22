@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import styles from './Canvas.module.css'
 import type { Point } from '@/hooks/useSAM'
+import { IMAGE_UPLOAD_ACCEPT } from '@/lib/imageUpload'
 
 interface CanvasProps {
   imageSrc: string | null
@@ -238,7 +239,7 @@ export default function Canvas({
             ref={fileInputRef}
             type="file"
             hidden
-            accept="image/*"
+            accept={IMAGE_UPLOAD_ACCEPT}
             onChange={handleFileInput}
           />
         </div>
@@ -344,7 +345,7 @@ export default function Canvas({
         ref={fileInputRef}
         type="file"
         hidden
-        accept="image/*"
+        accept={IMAGE_UPLOAD_ACCEPT}
         onChange={handleFileInput}
       />
     </div>

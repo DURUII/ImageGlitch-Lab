@@ -31,6 +31,15 @@
   display: block;
 }
 
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  left: -9999px;
+}
+
 .scanline {
   position: absolute;
   inset: 0;
@@ -44,6 +53,30 @@
   );
   mix-blend-mode: screen;
   opacity: 0.5;
+}
+
+.captureFrame {
+  position: absolute;
+  border: 1px solid rgba(0, 255, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.2), 0 0 18px rgba(0, 255, 255, 0.24) inset;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.captureBadge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  border: 1px solid rgba(0, 255, 255, 0.48);
+  background: rgba(0, 0, 0, 0.58);
+  color: #d7fffc;
+  font-family: var(--font-body);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.34rem 0.46rem;
+  pointer-events: none;
 }
 
 .loading {
@@ -161,6 +194,56 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  border: 1px solid var(--gray-700);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--gray-300);
+  font-family: var(--font-body);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.28rem 0.42rem;
+  line-height: 1;
+  transition: border-color var(--duration-fast) var(--ease-out-expo),
+    color var(--duration-fast) var(--ease-out-expo),
+    background var(--duration-fast) var(--ease-out-expo),
+    transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.refreshButton:hover {
+  border-color: var(--white);
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.refreshButton:active {
+  transform: translateY(0);
+}
+
+.refreshButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.refreshIcon {
+  width: 12px;
+  height: 12px;
+  transform-origin: center;
+  transition: transform 280ms var(--ease-out-expo);
+}
+
+.refreshButton:hover .refreshIcon {
+  transform: rotate(150deg);
+}
+
+.refreshButton:active .refreshIcon {
+  transform: rotate(210deg) scale(0.94);
 }
 
 .pickerAction {
@@ -339,7 +422,9 @@
   .primary,
   .secondary,
   .themeButton,
-  .progressFill {
+  .progressFill,
+  .refreshButton,
+  .refreshIcon {
     transition: none;
   }
 }

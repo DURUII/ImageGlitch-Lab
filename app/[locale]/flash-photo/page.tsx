@@ -16,9 +16,12 @@ import OnboardingFocus from '@/components/editor/OnboardingFocus'
 import ExportModal from '@/components/ExportModal'
 import { useSAM, type Point, type MaskResult } from '@/hooks/useSAM'
 import { useSharedUpload } from '@/hooks/useSharedUpload'
+import { imageFileToDataUrl } from '@/lib/imageUpload'
 import type { Subject, BGM, AppMode } from '@/types'
 
 // --- Helpers (Previous helpers preserved) ---
+
+const EXPORT_FPS = 30
 
 const generateColor = (index: number) => {
   const colors = ['#FFFFFF', '#00FF00', '#FF00FF', '#00FFFF', '#FFFF00', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7']
@@ -58,6 +61,19 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
     img.onerror = reject
     img.src = src
   })
+}
+
+const isIOSFamilyDevice = () => {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent
+  const legacyIOS = /iPad|iPhone|iPod/.test(ua)
+  const touchMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+  return legacyIOS || touchMac
+}
+
+const toUint8 = (data: Uint8Array | ArrayBuffer): Uint8Array => {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
+  return Uint8Array.from(bytes)
 }
 
 const getMaskBounds = (imageData: ImageData) => {
@@ -195,7 +211,7 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
   const [currentPlayingIndex, setCurrentPlayingIndex] = useState<number | null>(null)
   const [previewMaskSrc, setPreviewMaskSrc] = useState<string | null>(null)
   const [isExportOpen, setIsExportOpen] = useState(false)
-  const [exportFormats, setExportFormats] = useState<Array<'mp4' | 'gif' | 'live' | 'cutout'>>(['mp4'])
+  const [exportFormats, setExportFormats] = useState<Array<'mp4' | 'gif' | 'cutout'>>(['mp4'])
   const [cutoutModes, setCutoutModes] = useState<Array<'cropped' | 'fullsize'>>(['cropped'])
   const [exportBusy, setExportBusy] = useState(false)
   const [exportNote, setExportNote] = useState<string | null>(null)
@@ -426,9 +442,66 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = filename
+    a.rel = 'noopener'
+    a.style.display = 'none'
+    const ios = isIOSFamilyDevice()
+    if (ios) {
+      a.target = '_blank'
+      // Keep filename hint for browsers that still honor download on iOS.
+      a.download = filename
+    } else {
+      a.download = filename
+    }
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => {
+      a.remove()
+      URL.revokeObjectURL(url)
+    }, 60_000)
+  }
+
+  type ExportShareFile = {
+    name: string
+    blob: Blob
+  }
+
+  const shareFilesIfPossible = async (files: ExportShareFile[], title: string): Promise<'shared' | 'unsupported' | 'canceled'> => {
+    if (!isIOSFamilyDevice() || typeof navigator === 'undefined' || typeof navigator.share !== 'function' || typeof File !== 'function') {
+      return 'unsupported'
+    }
+
+    const shareFiles = files.map(({ name, blob }) => new File([blob], name, { type: blob.type || 'application/octet-stream' }))
+    if (typeof navigator.canShare === 'function') {
+      try {
+        if (!navigator.canShare({ files: shareFiles })) {
+          return 'unsupported'
+        }
+      } catch {
+        return 'unsupported'
+      }
+    }
+
+    try {
+      await navigator.share({
+        title,
+        files: shareFiles,
+      })
+      return 'shared'
+    } catch (error) {
+      const name = error instanceof Error ? error.name : ''
+      if (name === 'AbortError') {
+        return 'canceled'
+      }
+      return 'unsupported'
+    }
+  }
+
+  const deliverFiles = async (files: ExportShareFile[], title: string): Promise<'shared' | 'downloaded' | 'canceled'> => {
+    const shareResult = await shareFilesIfPossible(files, title)
+    if (shareResult === 'shared') return 'shared'
+    if (shareResult === 'canceled') return 'canceled'
+    files.forEach(({ name, blob }) => downloadBlob(blob, name))
+    return 'downloaded'
   }
 
   const createFullsizeCutoutUrl = async (maskResult: MaskResult, imageUrl: string): Promise<string | null> => {
@@ -572,7 +645,7 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     return { validSubjects, baseImage, width, height, overlays }
   }
 
-  const renderFrames = async () => {
+  const renderFrames = async (options?: { maxDurationSeconds?: number; fps?: number }) => {
     const data = await buildExportFrames()
     if (!data) {
       setExportNote('NO SUBJECTS TO EXPORT.')
@@ -584,7 +657,10 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     canvas.height = height
     const ctx = canvas.getContext('2d')!
 
-    const fps = 30
+    const fps = options?.fps ?? EXPORT_FPS
+    const maxFrameCount = typeof options?.maxDurationSeconds === 'number'
+      ? Math.max(1, Math.floor(options.maxDurationSeconds * fps))
+      : Number.POSITIVE_INFINITY
     const frames: { data: Uint8ClampedArray; duration: number }[] = []
     const durations = validSubjects.map(s => Math.max(0.05, s.duration ?? 0.1))
     const repeats = durations.map(d => Math.max(1, Math.round(d * fps)))
@@ -599,15 +675,24 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     }
 
     for (let i = 0; i < validSubjects.length; i++) {
+      if (frames.length >= maxFrameCount) break
       draw(i)
       const imageData = ctx.getImageData(0, 0, width, height)
-      for (let r = 0; r < repeats[i]; r++) {
+      const remain = maxFrameCount - frames.length
+      const repeatCount = Math.min(repeats[i], remain)
+      for (let r = 0; r < repeatCount; r++) {
         frames.push({ data: imageData.data.slice(), duration: 1000 / fps })
       }
       setExportProgress(Math.round(((i + 1) / validSubjects.length) * 40))
     }
 
-    return { frames, width, height, fps }
+    return {
+      frames,
+      width,
+      height,
+      fps,
+      durationSeconds: frames.length / fps
+    }
   }
 
   const ensureFfmpeg = async () => {
@@ -652,17 +737,36 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     }
 
     await ffmpeg.exec([
+      '-y',
       '-framerate', String(fps),
       '-i', 'frame_%04d.png',
       '-c:v', 'libx264',
+      '-crf', '18',
+      '-preset', 'medium',
       '-pix_fmt', 'yuv420p',
       'out.mp4'
     ])
 
-    const data = await ffmpeg.readFile('out.mp4')
-    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data as unknown as ArrayBuffer)
-    const copy = Uint8Array.from(bytes)
-    downloadBlob(new Blob([copy], { type: 'video/mp4' }), 'imageglitch-export.mp4')
+    let copy = toUint8(await ffmpeg.readFile('out.mp4') as Uint8Array | ArrayBuffer)
+    if (copy.length === 0) {
+      await ffmpeg.exec([
+        '-y',
+        '-framerate', String(fps),
+        '-i', 'frame_%04d.png',
+        '-c:v', 'mpeg4',
+        '-q:v', '2',
+        'out.mp4'
+      ])
+      copy = toUint8(await ffmpeg.readFile('out.mp4') as Uint8Array | ArrayBuffer)
+    }
+    if (copy.length === 0) {
+      throw new Error('EMPTY MP4 OUTPUT')
+    }
+    const mp4Blob = new Blob([Uint8Array.from(copy).buffer], { type: 'video/mp4' })
+    const delivery = await deliverFiles([{ name: 'imageglitch-export.mp4', blob: mp4Blob }], 'IMAGEGLITCH EXPORT')
+    if (delivery === 'canceled') {
+      setExportNote('EXPORT CANCELED.')
+    }
 
     for (const name of written) {
       await ffmpeg.deleteFile(name)
@@ -689,22 +793,11 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
 
     encoder.finish()
     const gifData = encoder.bytes()
-    downloadBlob(new Blob([gifData], { type: 'image/gif' }), 'imageglitch-export.gif')
-  }
-
-  const exportLivePhoto = async () => {
-    setExportNote('LIVE PHOTO EXPORT IS LIMITED IN BROWSER. EXPORTING MP4 AND STILL.')
-    await exportMp4WithFfmpeg()
-    const data = await buildExportFrames()
-    if (!data) return
-    const { baseImage, width, height } = data
-    const canvas = document.createElement('canvas')
-    canvas.width = width
-    canvas.height = height
-    const ctx = canvas.getContext('2d')!
-    ctx.drawImage(baseImage, 0, 0, width, height)
-    const blob = await new Promise<Blob>((resolve) => canvas.toBlob(b => resolve(b!), 'image/jpeg', 0.92))
-    downloadBlob(blob, 'imageglitch-live-photo.jpg')
+    const gifBlob = new Blob([gifData], { type: 'image/gif' })
+    const delivery = await deliverFiles([{ name: 'imageglitch-export.gif', blob: gifBlob }], 'IMAGEGLITCH EXPORT')
+    if (delivery === 'canceled') {
+      setExportNote('EXPORT CANCELED.')
+    }
   }
 
   const exportCutoutZip = async () => {
@@ -731,9 +824,29 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     })
 
     await Promise.all(jobs)
+    const entries = Object.entries(files)
+    if (entries.length === 0) {
+      setExportNote('NO CUTOUTS TO EXPORT.')
+      return
+    }
+    if (entries.length === 1) {
+      const [path, data] = entries[0]
+      const filename = path.split('/').pop() || path
+      const delivery = await deliverFiles(
+        [{ name: filename, blob: new Blob([Uint8Array.from(data).buffer], { type: 'image/png' }) }],
+        'IMAGEGLITCH CUTOUT'
+      )
+      if (delivery === 'canceled') {
+        setExportNote('EXPORT CANCELED.')
+      }
+      return
+    }
     const zipped = zipSync(files, { level: 6 })
     const zipBlob = new Blob([zipped as unknown as BlobPart], { type: 'application/zip' })
-    downloadBlob(zipBlob, 'imageglitch-cutouts.zip')
+    const delivery = await deliverFiles([{ name: 'imageglitch-cutouts.zip', blob: zipBlob }], 'IMAGEGLITCH CUTOUTS')
+    if (delivery === 'canceled') {
+      setExportNote('EXPORT CANCELED.')
+    }
   }
 
   const handleExport = async () => {
@@ -753,8 +866,6 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
           await exportGif()
         } else if (format === 'mp4') {
           await exportMp4WithFfmpeg()
-        } else if (format === 'live') {
-          await exportLivePhoto()
         }
       }
     } catch (err) {
@@ -822,10 +933,9 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     }
   }, [sharedImage, uploadedImage])
 
-  const handleUpload = (file: File) => {
-    const reader = new FileReader()
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result as string
+  const handleUpload = async (file: File) => {
+    try {
+      const dataUrl = await imageFileToDataUrl(file)
       try {
         const img = await loadImage(dataUrl)
         const aspect = img.width / img.height
@@ -834,8 +944,9 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
         setImageAspect(null)
       }
       startUploadTransition(dataUrl)
+    } catch (error) {
+      console.error('Upload decode error:', error)
     }
-    reader.readAsDataURL(file)
   }
   
   const handleUseSample = async () => {

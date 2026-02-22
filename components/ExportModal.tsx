@@ -1,6 +1,6 @@
 import styles from './ExportModal.module.css'
 
-type ExportFormat = 'mp4' | 'gif' | 'live' | 'cutout'
+type ExportFormat = 'mp4' | 'gif' | 'cutout'
 type CutoutMode = 'cropped' | 'fullsize'
 
 interface ExportModalProps {
@@ -41,12 +41,11 @@ export default function ExportModal({
 }: ExportModalProps) {
   if (!isOpen) return null
 
-  const formatOptions = availableFormats ?? (['mp4', 'gif', 'live', 'cutout'] as ExportFormat[])
+  const formatOptions = availableFormats ?? (['mp4', 'gif', 'cutout'] as ExportFormat[])
   const getFormatLabel = (opt: ExportFormat) => {
     if (formatLabels?.[opt]) return formatLabels[opt]
     if (opt === 'mp4') return 'MP4'
     if (opt === 'gif') return 'GIF'
-    if (opt === 'live') return 'LIVE PHOTO'
     return 'CUTOUT'
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { fetchFile } from '@ffmpeg/util'
 import { zipSync } from 'fflate'
@@ -9,12 +9,15 @@ import TopBar from '@/components/TopBar'
 import Footer from '@/components/Footer'
 import ExportModal from '@/components/ExportModal'
 import { useSharedUpload } from '@/hooks/useSharedUpload'
+import { IMAGE_UPLOAD_ACCEPT, imageFileToDataUrl } from '@/lib/imageUpload'
 import styles from './lidar.module.css'
 
 const DEFAULT_LIDAR_IMAGE = '/examples/apple.jpg'
-const EXPORT_MAX_SIDE = 960
+const EXPORT_MAX_SIDE = 1920
 const EXPORT_FPS = 20
 const EXPORT_SECONDS = 3
+const MAX_PREVIEW_DPR = 2
+const LIDAR_SETTINGS_STORAGE_KEY = 'imageglitch:lidar:settings:v1'
 
 const THEMES = {
   cyan: { name: 'QUANTUM CYAN', r: 0, g: 255, b: 240 },
@@ -26,7 +29,7 @@ type ThemeKey = keyof typeof THEMES
 type ActiveSpectrum = ThemeKey | 'custom'
 type ExportMode = 'overlay' | 'composite'
 type ExportType = 'overlay' | 'render'
-type ModalExportFormat = 'mp4' | 'gif' | 'live' | 'cutout'
+type ModalExportFormat = 'mp4' | 'gif' | 'cutout'
 
 type LidarSettings = {
   blockSize: number
@@ -62,6 +65,7 @@ type BuiltFrames = {
   width: number
   height: number
   delayMs: number
+  durationSeconds: number
   encodeProgressStart: number
   encodeProgressEnd: number
 }
@@ -76,13 +80,19 @@ const defaultSettings: LidarSettings = {
   blockSize: 6,
 }
 
-const fileToDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(new Error('FAILED TO READ FILE'))
-    reader.readAsDataURL(file)
-  })
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+const normalizeLidarSettings = (raw: Partial<LidarSettings> | null | undefined): LidarSettings => {
+  return {
+    density: clamp(Number(raw?.density ?? defaultSettings.density), 0.05, 1),
+    edgeFocus: clamp(Number(raw?.edgeFocus ?? defaultSettings.edgeFocus), 0, 10),
+    depth: clamp(Number(raw?.depth ?? defaultSettings.depth), 0, 2200),
+    thickness: clamp(Number(raw?.thickness ?? defaultSettings.thickness), 40, 260),
+    speed: clamp(Number(raw?.speed ?? defaultSettings.speed), 0.8, 8),
+    bgDarken: clamp(Number(raw?.bgDarken ?? defaultSettings.bgDarken), 0, 0.95),
+    blockSize: clamp(Number(raw?.blockSize ?? defaultSettings.blockSize), 4, 16),
+  }
+}
 
 const loadImage = (src: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
@@ -96,9 +106,77 @@ const downloadBlob = (blob: Blob, filename: string) => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = filename
+  a.rel = 'noopener'
+  a.style.display = 'none'
+  const ios = isIOSFamilyDevice()
+  if (ios) {
+    a.target = '_blank'
+    // Keep filename hint for browsers that still honor download on iOS.
+    a.download = filename
+  } else {
+    a.download = filename
+  }
+  document.body.appendChild(a)
   a.click()
-  URL.revokeObjectURL(url)
+  window.setTimeout(() => {
+    a.remove()
+    URL.revokeObjectURL(url)
+  }, 60_000)
+}
+
+type ExportShareFile = {
+  name: string
+  blob: Blob
+}
+
+const shareFilesIfPossible = async (files: ExportShareFile[], title: string): Promise<'shared' | 'unsupported' | 'canceled'> => {
+  if (!isIOSFamilyDevice() || typeof navigator === 'undefined' || typeof navigator.share !== 'function' || typeof File !== 'function') {
+    return 'unsupported'
+  }
+
+  const shareFiles = files.map(({ name, blob }) => new File([blob], name, { type: blob.type || inferMimeType(name) }))
+  if (typeof navigator.canShare === 'function') {
+    try {
+      if (!navigator.canShare({ files: shareFiles })) {
+        return 'unsupported'
+      }
+    } catch {
+      return 'unsupported'
+    }
+  }
+
+  try {
+    await navigator.share({
+      title,
+      files: shareFiles,
+    })
+    return 'shared'
+  } catch (error) {
+    const name = error instanceof Error ? error.name : ''
+    if (name === 'AbortError') {
+      return 'canceled'
+    }
+    return 'unsupported'
+  }
+}
+
+const deliverFiles = async (files: ExportShareFile[], title: string): Promise<'shared' | 'downloaded' | 'canceled'> => {
+  const shareResult = await shareFilesIfPossible(files, title)
+  if (shareResult === 'shared') return 'shared'
+  if (shareResult === 'canceled') return 'canceled'
+  files.forEach(({ name, blob }) => downloadBlob(blob, name))
+  return 'downloaded'
+}
+
+const inferMimeType = (filename: string) => {
+  const lower = filename.toLowerCase()
+  if (lower.endsWith('.mp4')) return 'video/mp4'
+  if (lower.endsWith('.mov')) return 'video/quicktime'
+  if (lower.endsWith('.gif')) return 'image/gif'
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg'
+  if (lower.endsWith('.png')) return 'image/png'
+  if (lower.endsWith('.txt')) return 'text/plain;charset=utf-8'
+  return 'application/octet-stream'
 }
 
 const hexToRgb = (hex: string) => {
@@ -109,6 +187,164 @@ const hexToRgb = (hex: string) => {
     g: Number.parseInt(safe.slice(2, 4), 16) || 255,
     b: Number.parseInt(safe.slice(4, 6), 16) || 100,
   }
+}
+
+const isIOSFamilyDevice = () => {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent
+  const legacyIOS = /iPad|iPhone|iPod/.test(ua)
+  const touchMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+  return legacyIOS || touchMac
+}
+
+const toUint8 = (data: Uint8Array | ArrayBuffer): Uint8Array => {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
+  return Uint8Array.from(bytes)
+}
+
+const noiseFromCoords = (x: number, y: number, width: number, height: number) => {
+  const nx = x / Math.max(1, width)
+  const ny = y / Math.max(1, height)
+  const seed = Math.sin(nx * 91.345 + ny * 47.123 + (x + y) * 0.013) * 43758.5453123
+  return seed - Math.floor(seed)
+}
+
+const buildLidarBlocks = (imageData: Uint8ClampedArray, imgW: number, imgH: number, blockSize: number): LidarBlock[] => {
+  const getLuma = (index: number) => {
+    if (index < 0 || index >= imageData.length) return 0
+    return (imageData[index] * 0.299 + imageData[index + 1] * 0.587 + imageData[index + 2] * 0.114) / 255
+  }
+
+  const blocks: LidarBlock[] = []
+  for (let y = 0; y < imgH; y += blockSize) {
+    for (let x = 0; x < imgW; x += blockSize) {
+      const idx = (y * imgW + x) * 4
+      if (imageData[idx + 3] < 8) continue
+
+      const brightness = getLuma(idx)
+      let edge = 0
+      if (x + blockSize < imgW && y + blockSize < imgH) {
+        const right = (y * imgW + (x + blockSize)) * 4
+        const bottom = ((y + blockSize) * imgW + x) * 4
+        edge = Math.abs(brightness - getLuma(right)) + Math.abs(brightness - getLuma(bottom))
+      }
+
+      blocks.push({
+        baseX: x,
+        baseY: y,
+        r: imageData[idx],
+        g: imageData[idx + 1],
+        b: imageData[idx + 2],
+        brightness,
+        edge,
+        noise: noiseFromCoords(x, y, imgW, imgH),
+      })
+    }
+  }
+
+  return blocks
+}
+
+const getPreviewPixelRatio = (cssWidth: number, cssHeight: number) => {
+  if (typeof window === 'undefined') return 1
+  const raw = window.devicePixelRatio || 1
+  const maxCssSide = Math.max(1, cssWidth, cssHeight)
+  const cappedBySide = EXPORT_MAX_SIDE / maxCssSide
+  return Math.max(1, Math.min(raw, MAX_PREVIEW_DPR, cappedBySide))
+}
+
+const getAlignedOverlayStartTimeMs = (
+  nowMs: number,
+  speed: number,
+  sceneScale: number,
+  drawImageH: number,
+  depth: number
+) => {
+  const speedPerSec = Math.max(0.0001, speed) * 200 * sceneScale
+  const cycle = Math.max(1, drawImageH + depth * sceneScale * 2 + 1000 * sceneScale)
+  const rawNow = ((nowMs * 0.001 * speedPerSec) % cycle + cycle) % cycle
+  // Align to the phase reset so the overlay starts with visible scan energy.
+  const deltaRaw = (0 - rawNow + cycle) % cycle
+  return nowMs + (deltaRaw / speedPerSec) * 1000
+}
+
+const getWaveCycleMs = (
+  speed: number,
+  sceneScale: number,
+  drawImageH: number,
+  depth: number
+) => {
+  const speedPerSec = Math.max(0.0001, speed) * 200 * sceneScale
+  const cycle = Math.max(1, drawImageH + depth * sceneScale * 2 + 1000 * sceneScale)
+  return (cycle / speedPerSec) * 1000
+}
+
+const estimateLidarActivityAtTimeMs = (
+  scene: SceneData,
+  settings: LidarSettings,
+  sceneScale: number,
+  timeMs: number
+) => {
+  const scaledDepth = settings.depth * sceneScale
+  const scaledThickness = Math.max(1, settings.thickness * sceneScale)
+  const t = timeMs * 0.001 * settings.speed
+  const drawImageH = scene.imgH * sceneScale
+  const wavePhase = (t * 200 * sceneScale) % (drawImageH + scaledDepth * 2 + 1000 * sceneScale) - 500 * sceneScale
+
+  let score = 0
+  const stride = Math.max(1, Math.floor(scene.blocks.length / 5000))
+  for (let i = 0; i < scene.blocks.length; i += stride) {
+    const block = scene.blocks[i]
+    const survivalThreshold = settings.density + block.edge * settings.edgeFocus
+    if (block.noise > survivalThreshold) continue
+
+    const baseX = block.baseX * sceneScale
+    const baseY = block.baseY * sceneScale
+    const depthOffset = block.brightness * scaledDepth
+    const patchNoise = Math.sin(baseX * 0.01 + t) * Math.cos(baseY * 0.01 - t) * (100 * sceneScale)
+    const effectiveY = baseY - depthOffset + patchNoise
+    const dist = Math.abs(effectiveY - wavePhase)
+    if (dist >= scaledThickness) continue
+
+    const intensity = 1 - dist / scaledThickness
+    if (intensity > 0.08) score += intensity
+  }
+  return score
+}
+
+const findBestStartTimeMs = (
+  nowMs: number,
+  durationSeconds: number,
+  scene: SceneData,
+  settings: LidarSettings,
+  sceneScale: number
+) => {
+  const drawImageH = scene.imgH * sceneScale
+  const cycleMs = getWaveCycleMs(settings.speed, sceneScale, drawImageH, settings.depth)
+  if (!Number.isFinite(cycleMs) || cycleMs <= 0) return nowMs
+
+  const durationMs = durationSeconds * 1000
+  const candidates = 14
+  const sampleSteps = 10
+  const alignedStart = getAlignedOverlayStartTimeMs(nowMs, settings.speed, sceneScale, drawImageH, settings.depth)
+  let bestStart = alignedStart
+  let bestScore = -1
+
+  for (let c = 0; c < candidates; c += 1) {
+    const candidateStart = alignedStart + (c / candidates) * cycleMs
+    let score = 0
+    for (let s = 0; s < sampleSteps; s += 1) {
+      const ratio = sampleSteps <= 1 ? 0 : s / (sampleSteps - 1)
+      const t = candidateStart + durationMs * ratio
+      score += estimateLidarActivityAtTimeMs(scene, settings, sceneScale, t)
+    }
+    if (score > bestScore) {
+      bestScore = score
+      bestStart = candidateStart
+    }
+  }
+
+  return bestStart
 }
 
 const drawLidarFrame = ({
@@ -205,33 +441,67 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const animationRef = useRef<number | null>(null)
   const ffmpegRef = useRef<FFmpeg | null>(null)
+  const lastFrameTimeRef = useRef(0)
 
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [source, setSource] = useState<HTMLImageElement | null>(null)
   const [scene, setScene] = useState<SceneData | null>(null)
   const [activeSpectrum, setActiveSpectrum] = useState<ActiveSpectrum>('matrix')
   const [customColor, setCustomColor] = useState('#32ff64')
   const [settings, setSettings] = useState<LidarSettings>(defaultSettings)
+  const [settingsHydrated, setSettingsHydrated] = useState(false)
   const [viewport, setViewport] = useState({ width: 0, height: 0 })
 
   const [isExportOpen, setIsExportOpen] = useState(false)
-  const [exportFormats, setExportFormats] = useState<ModalExportFormat[]>(['gif', 'mp4'])
-  const [exportTypes, setExportTypes] = useState<ExportType[]>(['overlay', 'render'])
+  const [exportFormats, setExportFormats] = useState<ModalExportFormat[]>(['mp4'])
+  const [exportTypes, setExportTypes] = useState<ExportType[]>(['render'])
   const [exportBusy, setExportBusy] = useState(false)
   const [exportProgress, setExportProgress] = useState<number>(0)
   const [exportNote, setExportNote] = useState<string | null>(null)
+  const [capturePreviewPercent, setCapturePreviewPercent] = useState<number | null>(null)
 
   const selectedTheme = activeSpectrum === 'custom' ? hexToRgb(customColor) : THEMES[activeSpectrum]
 
   const handleReplace = async (file: File) => {
     setBusy(true)
+    setError(null)
     try {
-      const dataUrl = await fileToDataUrl(file)
+      const dataUrl = await imageFileToDataUrl(file)
       setSharedUpload(dataUrl)
+    } catch (error) {
+      console.error('Replace image failed:', error)
+      let msg = 'UNKNOWN ERROR'
+      if (error instanceof Error) {
+        msg = error.message
+      } else if (typeof error === 'string') {
+        msg = error
+      } else {
+        try {
+          msg = JSON.stringify(error)
+        } catch {
+          msg = String(error)
+        }
+      }
+      setError(`FAILED: ${msg.slice(0, 50).toUpperCase()}`)
     } finally {
       setBusy(false)
     }
   }
+
+  const openUploadPicker = useCallback(() => {
+    const input = inputRef.current
+    if (!input) return
+    if (typeof input.showPicker === 'function') {
+      try {
+        input.showPicker()
+        return
+      } catch {
+        // Fallback to click when showPicker is blocked.
+      }
+    }
+    input.click()
+  }, [])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -244,6 +514,31 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const saved = window.localStorage.getItem(LIDAR_SETTINGS_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<LidarSettings>
+        setSettings(normalizeLidarSettings(parsed))
+      }
+    } catch {
+      // Ignore invalid local storage payloads.
+    } finally {
+      setSettingsHydrated(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!settingsHydrated) return
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(LIDAR_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
+    } catch {
+      // Ignore storage write failures (private mode/quota).
+    }
+  }, [settings, settingsHydrated])
 
   useEffect(() => {
     let mounted = true
@@ -260,9 +555,12 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
         const example = await loadImage(DEFAULT_LIDAR_IMAGE)
         if (!mounted) return
         setSource(example)
-      } catch {
+        setError(null)
+      } catch (err) {
         if (!mounted) return
         setSource(null)
+        setError('FAILED TO LOAD SCENE')
+        console.error('Scene load error:', err)
       }
     }
 
@@ -313,41 +611,9 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
     }
 
     tempCtx.drawImage(source, 0, 0, imgW, imgH)
-    const imageData = tempCtx.getImageData(0, 0, imgW, imgH).data
-
-    const getLuma = (index: number) => {
-      if (index < 0 || index >= imageData.length) return 0
-      return (imageData[index] * 0.299 + imageData[index + 1] * 0.587 + imageData[index + 2] * 0.114) / 255
-    }
-
-    const blocks: LidarBlock[] = []
     const blockSize = Math.max(2, Math.floor(settings.blockSize))
-
-    for (let y = 0; y < imgH; y += blockSize) {
-      for (let x = 0; x < imgW; x += blockSize) {
-        const idx = (y * imgW + x) * 4
-        if (imageData[idx + 3] < 8) continue
-
-        const brightness = getLuma(idx)
-        let edge = 0
-        if (x + blockSize < imgW && y + blockSize < imgH) {
-          const right = (y * imgW + (x + blockSize)) * 4
-          const bottom = ((y + blockSize) * imgW + x) * 4
-          edge = Math.abs(brightness - getLuma(right)) + Math.abs(brightness - getLuma(bottom))
-        }
-
-        blocks.push({
-          baseX: x,
-          baseY: y,
-          r: imageData[idx],
-          g: imageData[idx + 1],
-          b: imageData[idx + 2],
-          brightness,
-          edge,
-          noise: Math.random(),
-        })
-      }
-    }
+    const imageData = tempCtx.getImageData(0, 0, imgW, imgH).data
+    const blocks = buildLidarBlocks(imageData, imgW, imgH, blockSize)
 
     setScene({ blocks, imgW, imgH, offsetX, offsetY })
   }, [source, viewport.height, viewport.width, settings.blockSize])
@@ -356,12 +622,17 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
     if (!source || !scene || !canvasRef.current || viewport.width <= 0 || viewport.height <= 0) return
 
     const canvas = canvasRef.current
-    canvas.width = viewport.width
-    canvas.height = viewport.height
-    const ctx = canvas.getContext('2d', { alpha: false })
+    const pixelRatio = getPreviewPixelRatio(viewport.width, viewport.height)
+    canvas.width = Math.max(1, Math.round(viewport.width * pixelRatio))
+    canvas.height = Math.max(1, Math.round(viewport.height * pixelRatio))
+    const ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: true })
     if (!ctx) return
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
 
     const render = (time: number) => {
+      lastFrameTimeRef.current = time
       drawLidarFrame({
         ctx,
         canvasWidth: viewport.width,
@@ -392,6 +663,16 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
     setSettings((prev) => ({ ...prev, [key]: next }))
   }
 
+  const handleRefresh = () => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(LIDAR_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
+    } catch {
+      // Ignore storage write failures and still refresh.
+    }
+    window.location.reload()
+  }
+
   const ensureFfmpeg = async () => {
     if (!ffmpegRef.current) ffmpegRef.current = new FFmpeg()
     const ffmpeg = ffmpegRef.current
@@ -399,26 +680,76 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
     return ffmpeg
   }
 
-  const buildFrames = async (mode: ExportMode, progressStart: number, progressEnd: number): Promise<BuiltFrames | null> => {
+  const buildFrames = async (
+    mode: ExportMode,
+    progressStart: number,
+    progressEnd: number,
+    options?: { maxDurationSeconds?: number }
+  ): Promise<BuiltFrames | null> => {
     if (!source || !scene) return null
 
+    const baseDuration = Math.max(0.5, EXPORT_SECONDS)
+    const maxDuration = typeof options?.maxDurationSeconds === 'number'
+      ? Math.max(0.5, options.maxDurationSeconds)
+      : baseDuration
+    const durationSeconds = Math.min(baseDuration, maxDuration)
+
     const progressSpan = Math.max(1, progressEnd - progressStart)
-    const scale = Math.min(1, EXPORT_MAX_SIDE / Math.max(scene.imgW, scene.imgH))
-    const width = Math.max(1, Math.round(scene.imgW * scale))
-    const height = Math.max(1, Math.round(scene.imgH * scale))
-    const totalFrames = Math.max(20, Math.round(EXPORT_FPS * EXPORT_SECONDS))
+    
+    // Calculate export dimensions based on original image size, respecting max side
+    const maxSide = EXPORT_MAX_SIDE
+    const srcW = source.naturalWidth || source.width
+    const srcH = source.naturalHeight || source.height
+    
+    let exportW = srcW
+    let exportH = srcH
+    
+    if (exportW > maxSide || exportH > maxSide) {
+      const scale = Math.min(maxSide / exportW, maxSide / exportH)
+      exportW = Math.round(exportW * scale)
+      exportH = Math.round(exportH * scale)
+    }
+    
+    // Ensure even dimensions for video encoding compatibility
+    if (exportW % 2 !== 0) exportW -= 1
+    if (exportH % 2 !== 0) exportH -= 1
+    
+    const width = exportW
+    const height = exportH
+    
+    // Scale factor from internal scene coordinates to export coordinates
+    const sceneScale = width / scene.imgW
+    
+    const totalFrames = Math.max(1, Math.round(EXPORT_FPS * durationSeconds))
     const delayMs = Math.round(1000 / EXPORT_FPS)
+    const durationMs = durationSeconds * 1000
+    const cycleMs = getWaveCycleMs(settings.speed, sceneScale, scene.imgH * sceneScale, settings.depth)
+    const overlayCyclesPerClip = 3
+    const motionScale = mode === 'overlay'
+      ? Math.max(1, (overlayCyclesPerClip * cycleMs) / Math.max(1, durationMs))
+      : 1
+    const nowMs = lastFrameTimeRef.current || performance.now()
+    const startTimeMs = findBestStartTimeMs(
+      nowMs,
+      durationSeconds,
+      scene,
+      settings,
+      sceneScale
+    )
 
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
-    const ctx = canvas.getContext('2d', { alpha: false })
+    const ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: true })
     if (!ctx) throw new Error('FAILED TO CREATE EXPORT CONTEXT')
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
 
+    setCapturePreviewPercent(0)
     const frames: Uint8ClampedArray[] = []
 
     for (let i = 0; i < totalFrames; i += 1) {
-      const t = (i / EXPORT_FPS) * 1000
+      const t = startTimeMs + (i / EXPORT_FPS) * 1000 * motionScale
       drawLidarFrame({
         ctx,
         canvasWidth: width,
@@ -438,18 +769,22 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
       const frame = ctx.getImageData(0, 0, width, height)
       frames.push(frame.data.slice())
 
-      if (i % 4 === 0) {
+      if (i % 2 === 0) {
+        const ratio = (i + 1) / totalFrames
+        setCapturePreviewPercent(Math.min(100, Math.max(0, Math.round(ratio * 100))))
         const stage = (i / totalFrames) * 0.45
         setExportProgress(progressStart + Math.round(progressSpan * stage))
         await new Promise((resolve) => window.setTimeout(resolve, 0))
       }
     }
+    setCapturePreviewPercent(100)
 
     return {
       frames,
       width,
       height,
       delayMs,
+      durationSeconds,
       encodeProgressStart: progressStart + Math.round(progressSpan * 0.45),
       encodeProgressEnd: progressEnd,
     }
@@ -527,20 +862,41 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
 
     const outName = `imageglitch-lidar-${type}.mp4`
     await ffmpeg.exec([
+      '-y',
       '-framerate',
       String(EXPORT_FPS),
       '-i',
       'lidar_%04d.png',
       '-c:v',
       'libx264',
+      '-crf',
+      '14',
+      '-preset',
+      'slow',
       '-pix_fmt',
       'yuv420p',
       outName,
     ])
 
-    const data = await ffmpeg.readFile(outName)
-    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data as unknown as ArrayBuffer)
-    const copy = Uint8Array.from(bytes)
+    let copy = toUint8(await ffmpeg.readFile(outName) as Uint8Array | ArrayBuffer)
+    if (copy.length === 0) {
+      await ffmpeg.exec([
+        '-y',
+        '-framerate',
+        String(EXPORT_FPS),
+        '-i',
+        'lidar_%04d.png',
+        '-c:v',
+        'mpeg4',
+        '-q:v',
+        '2',
+        outName,
+      ])
+      copy = toUint8(await ffmpeg.readFile(outName) as Uint8Array | ArrayBuffer)
+    }
+    if (copy.length === 0) {
+      throw new Error('EMPTY MP4 OUTPUT')
+    }
 
     for (const name of frameNames) {
       await ffmpeg.deleteFile(name)
@@ -557,7 +913,9 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
   const handleExport = async () => {
     if (!source || !scene || exportBusy) return
 
-    const selectedFormats = exportFormats.filter((format): format is 'gif' | 'mp4' => format === 'gif' || format === 'mp4')
+    const selectedFormats = exportFormats.filter(
+      (format): format is 'gif' | 'mp4' => format === 'gif' || format === 'mp4'
+    )
     if (selectedFormats.length === 0) {
       setExportNote('SELECT AT LEAST ONE FORMAT.')
       return
@@ -570,6 +928,7 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
     setExportBusy(true)
     setExportProgress(0)
     setExportNote(null)
+    setCapturePreviewPercent(null)
 
     try {
       const tasks: Array<{ format: 'gif' | 'mp4'; type: ExportType }> = []
@@ -585,24 +944,67 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
         const task = tasks[i]
         const from = Math.round((i / tasks.length) * 100)
         const to = Math.round(((i + 1) / tasks.length) * 100)
-        const result = task.format === 'gif'
-          ? await exportGifBytes(task.type, from, to)
-          : await exportMp4Bytes(task.type, from, to)
-
-        if (result) {
-          files[result.filename] = result.bytes
+        if (task.format === 'gif') {
+          const result = await exportGifBytes(task.type, from, to)
+          if (result) {
+            files[result.filename] = result.bytes
+          }
+          continue
+        }
+        if (task.format === 'mp4') {
+          const result = await exportMp4Bytes(task.type, from, to)
+          if (result) {
+            files[result.filename] = result.bytes
+          }
+          continue
         }
       }
 
-      const zipped = zipSync(files, { level: 6 })
-      downloadBlob(new Blob([zipped as unknown as BlobPart], { type: 'application/zip' }), 'imageglitch-lidar-export.zip')
+      const entries = Object.entries(files)
+      if (entries.length === 0) {
+        setExportNote('NOTHING TO EXPORT.')
+        return
+      }
 
+      if (entries.length === 1) {
+        const [name, bytes] = entries[0]
+        const delivery = await deliverFiles(
+          [{ name, blob: new Blob([Uint8Array.from(bytes).buffer], { type: inferMimeType(name) }) }],
+          'IMAGEGLITCH LIDAR EXPORT'
+        )
+        setExportProgress(100)
+        if (delivery === 'canceled') {
+          setExportNote('EXPORT CANCELED.')
+          return
+        }
+        if (delivery === 'shared') {
+          setExportNote('EXPORT SHARED.')
+          return
+        }
+        setExportNote('EXPORT FILE READY.')
+        return
+      }
+
+      const zipped = zipSync(files, { level: 6 })
+      const delivery = await deliverFiles(
+        [{ name: 'imageglitch-lidar-export.zip', blob: new Blob([zipped as unknown as BlobPart], { type: 'application/zip' }) }],
+        'IMAGEGLITCH LIDAR EXPORT'
+      )
       setExportProgress(100)
+      if (delivery === 'canceled') {
+        setExportNote('EXPORT CANCELED.')
+        return
+      }
+      if (delivery === 'shared') {
+        setExportNote('EXPORT SHARED.')
+        return
+      }
       setExportNote('EXPORT ZIP READY.')
     } catch (error) {
       console.error(error)
       setExportNote('EXPORT FAILED. PLEASE TRY AGAIN.')
     } finally {
+      setCapturePreviewPercent(null)
       setExportBusy(false)
     }
   }
@@ -611,7 +1013,7 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
     <main className={styles.main}>
       <TopBar
         onExport={() => setIsExportOpen(true)}
-        onHelp={() => inputRef.current?.click()}
+        onHelp={openUploadPicker}
         helpLabel="UPLOAD"
         homeHref={`/${params.locale}`}
         showActions
@@ -621,12 +1023,59 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
         <div className={styles.stage} ref={containerRef}>
           <canvas ref={canvasRef} className={styles.canvas} />
           <div className={styles.scanline} aria-hidden="true" />
-          {!source && <div className={styles.loading}>LOADING SCENE...</div>}
+          {scene && capturePreviewPercent !== null && (
+            <>
+              <div
+                className={styles.captureFrame}
+                style={{
+                  left: `${scene.offsetX}px`,
+                  top: `${scene.offsetY}px`,
+                  width: `${scene.imgW}px`,
+                  height: `${scene.imgH}px`,
+                }}
+                aria-hidden="true"
+              />
+              <div className={styles.captureBadge} aria-live="polite">
+                FRAME PREVIEW {capturePreviewPercent}%
+              </div>
+            </>
+          )}
+          {busy && <div className={styles.loading}>PROCESSING IMAGE...</div>}
+          {!source && !busy && !error && <div className={styles.loading}>LOADING SCENE...</div>}
+          {error && <div className={styles.loading} style={{ color: '#ff3232' }}>{error}</div>}
         </div>
 
         <aside className={styles.panel}>
           <div className={`${styles.group} ${styles.parametersGroup}`}>
-            <div className={styles.groupTitle}>PARAMETERS</div>
+            <div className={styles.groupHead}>
+              <div className={styles.groupTitle}>PARAMETERS</div>
+              <button
+                type="button"
+                className={styles.refreshButton}
+                onClick={handleRefresh}
+                disabled={exportBusy}
+                aria-label="Refresh and keep current parameters"
+              >
+                <svg className={styles.refreshIcon} viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M20 12a8 8 0 1 1-2.34-5.66"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M20 4v4h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                REFRESH
+              </button>
+            </div>
 
             <div className={styles.row}>
               <label htmlFor="density">DENSITY</label>
@@ -727,10 +1176,11 @@ export default function LidarPage({ params }: { params: { locale: string } }) {
         </aside>
 
         <input
+          id="lidar-upload-input"
           ref={inputRef}
           type="file"
-          hidden
-          accept="image/*"
+          className={styles.fileInput}
+          accept={IMAGE_UPLOAD_ACCEPT}
           onChange={(event) => {
             const file = event.target.files?.[0]
             if (file) void handleReplace(file)
