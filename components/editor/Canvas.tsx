@@ -266,29 +266,6 @@ export default function Canvas({
           width: imageWidthPx ? `${imageWidthPx}px` : undefined
         }}
       >
-        <div className={styles.imageActions}>
-          <button
-            className={styles.replaceButton}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              fileInputRef.current?.click()
-            }}
-          >
-            REPLACE IMAGE
-          </button>
-          <button
-            className={styles.sampleSwapButton}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onUseSample?.()
-            }}
-          >
-            USE SAMPLE
-          </button>
-        </div>
-
         <img 
           src={imageSrc} 
           alt="Source" 

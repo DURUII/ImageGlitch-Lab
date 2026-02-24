@@ -16,7 +16,7 @@ import OnboardingFocus from '@/components/editor/OnboardingFocus'
 import ExportModal from '@/components/ExportModal'
 import { useSAM, type Point, type MaskResult } from '@/hooks/useSAM'
 import { useSharedUpload } from '@/hooks/useSharedUpload'
-import { imageFileToDataUrl } from '@/lib/imageUpload'
+import { IMAGE_UPLOAD_ACCEPT, imageFileToDataUrl } from '@/lib/imageUpload'
 import type { Subject, BGM, AppMode } from '@/types'
 
 // --- Helpers (Previous helpers preserved) ---
@@ -204,6 +204,7 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
   const [canvasWidth, setCanvasWidth] = useState<number | null>(null)
   const [imageWidthPx, setImageWidthPx] = useState<number | null>(null)
   const workspaceRef = useRef<HTMLDivElement>(null)
+  const uploadInputRef = useRef<HTMLInputElement>(null)
   const [previewStyle, setPreviewStyle] = useState<'highlight' | 'solid'>('highlight')
   const [bgm, setBgm] = useState<'none' | 'all-my-fellas.mp3' | 'whats-wrong-with-u.mp3'>('all-my-fellas.mp3')
   const [isLooping, setIsLooping] = useState(false)
@@ -879,9 +880,11 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
 
   // --- Handlers ---
 
-  const startUploadTransition = (dataUrl: string) => {
+  const startUploadTransition = (dataUrl: string, options?: { share?: boolean }) => {
     setUploadedImage(dataUrl)
-    setSharedUpload(dataUrl)
+    if (options?.share !== false) {
+      setSharedUpload(dataUrl)
+    }
     // 1. Reset state
     setSubjects([])
     setStagingPoints([])
@@ -911,6 +914,10 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
 
   useEffect(() => {
     if (!sharedImage || sharedImage === uploadedImage) return
+    if (sharedImage.startsWith('/examples/')) {
+      setSharedUpload(null)
+      return
+    }
     let cancelled = false
 
     const restoreFromShared = async () => {
@@ -931,7 +938,7 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     return () => {
       cancelled = true
     }
-  }, [sharedImage, uploadedImage])
+  }, [sharedImage, uploadedImage, setSharedUpload])
 
   const handleUpload = async (file: File) => {
     try {
@@ -948,6 +955,10 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
       console.error('Upload decode error:', error)
     }
   }
+
+  const openUploadPicker = () => {
+    uploadInputRef.current?.click()
+  }
   
   const handleUseSample = async () => {
     const sample = '/examples/input-sample.jpg'
@@ -958,7 +969,7 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
     } catch {
       setImageAspect(null)
     }
-    startUploadTransition(sample)
+    startUploadTransition(sample, { share: false })
   }
 
   const handlePointAdd = async (x: number, y: number, label: 0 | 1) => {
@@ -1200,10 +1211,12 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
           setOnboardingStep(0)
           setOnboardingOpen(true)
         }}
+        onSecondary={openUploadPicker}
         homeHref={`/${params.locale}`}
         showActions={isLayoutReady}
         status={isLayoutReady ? statusText : undefined}
         statusColor={statusColor}
+        secondaryLabel="UPLOAD"
       />
       
       <div 
@@ -1273,6 +1286,18 @@ export default function FlashPhotoPage({ params }: { params: { locale: string } 
         modelProgress={typeof loadingProgress?.progress === 'number' ? loadingProgress.progress : 0} 
         modelReady={isModelReady} 
         modelStatus={samStatus}
+      />
+
+      <input
+        ref={uploadInputRef}
+        type="file"
+        hidden
+        accept={IMAGE_UPLOAD_ACCEPT}
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          if (file) void handleUpload(file)
+          event.currentTarget.value = ''
+        }}
       />
 
       <OnboardingOverlay

@@ -3,22 +3,26 @@ import styles from './TopBar.module.css'
 interface TopBarProps {
   onExport?: () => void
   onHelp?: () => void
+  onSecondary?: () => void
   showActions?: boolean
   status?: string
   statusColor?: string
   homeHref?: string
   helpLabel?: string
+  secondaryLabel?: string
   exportLabel?: string
 }
 
 export default function TopBar({
   onExport,
   onHelp,
+  onSecondary,
   showActions = true,
   status,
   statusColor = '#FFFFFF',
   homeHref = '/',
   helpLabel = 'Help',
+  secondaryLabel,
   exportLabel = 'Export',
 }: TopBarProps) {
   return (
@@ -51,6 +55,9 @@ export default function TopBar({
       {showActions && (
         <div className={styles.right}>
           <button className={styles.actionButton} onClick={onHelp}>{helpLabel}</button>
+          {secondaryLabel && onSecondary && (
+            <button className={styles.actionButton} onClick={onSecondary}>{secondaryLabel}</button>
+          )}
           <button className={`${styles.actionButton} ${styles.exportButton}`} onClick={onExport}>
             {exportLabel}
           </button>
